@@ -18,7 +18,13 @@
 规则：生成 _tomorrow-boot.md 或至少在 _cyberlog.md 中保留 Tomorrow Boot Packet。
 原因：降低第二天恢复上下文的成本。
 
-## Rule 4: 重复 3 次的阻塞必须转成规则、模板或脚本
+## Rule 4: Daily AI request 默认完整处理
+
+触发条件：用户要求处理 daily、cyberlog、_ai-request.md，或当天结束流程。
+规则：不要停在 _ai-request.md。默认生成 _cyberlog.md、_tomorrow-boot.md 和 _ai-output-audit.md；如果有写入权限，直接保存到 Daily/compiled/YYYY-MM-DD/。
+原因：_ai-request.md 只是任务包，不是用户最终要看的整理结果。完整处理才能降低查看和恢复上下文成本。
+
+## Rule 5: 重复 3 次的阻塞必须转成规则、模板或脚本
 
 触发条件：同类 blocker/friction 在一周内重复出现。
 规则：不要只复盘，要把它沉淀为 workflow rule、template、checklist 或 automation。

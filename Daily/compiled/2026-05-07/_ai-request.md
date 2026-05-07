@@ -7,8 +7,21 @@
 AI 输出后建议保存为：
 - `Daily/compiled/2026-05-07/_cyberlog.md`
 - `Daily/compiled/2026-05-07/_tomorrow-boot.md`
+- `Daily/compiled/2026-05-07/_ai-output-audit.md`
 
 请先审核 AI 输出，不要让 AI 覆盖任何非下划线开头的原始 notes。
+
+## Codex / Agent 执行模式
+
+如果你是 Codex、agent，或者任何可以读写此仓库文件的 AI，请默认完整处理，不要只返回文本答案：
+
+1. 读取本 request 和同目录 `_ai-audit.md`。
+2. 生成并保存 `Daily/compiled/2026-05-07/_cyberlog.md`。
+3. 生成并保存 `Daily/compiled/2026-05-07/_tomorrow-boot.md`。
+4. 生成并保存 `Daily/compiled/2026-05-07/_ai-output-audit.md`，说明是否发现误读草稿状态、混入被排除目录、把推断升级成事实等问题。
+5. 不覆盖任何非 `_` 开头的原始 notes。
+
+只有在没有文件写入能力时，才把结果完整输出到聊天窗口。
 
 ## Prompt
 

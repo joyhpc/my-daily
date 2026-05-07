@@ -41,7 +41,7 @@ my-daily/
 - AI 生成内容和原始内容分开。
 - 所有 AI 生成文件使用 `_` 开头。
 - 生成 daily feed 时会排除 `_` 开头的 markdown，避免把 AI 输出再次喂回去。
-- 当前系统只生成 feed、request、模板和命令，不直接调用 OpenAI API。
+- 当前系统不直接调用 OpenAI API，但 Codex/agent 看到 `_ai-request.md` 时默认应完整处理并落盘结果。
 
 ## 初始化
 
@@ -91,23 +91,33 @@ python tools/cyberlog.py daily --date 2026-05-07
 - `Daily/compiled/2026-05-07/_ai-request.md`
 - `Daily/compiled/2026-05-07/_ai-audit.md`
 
-## 如何处理 `_ai-request.md`
+## 默认完整处理
 
-`_ai-request.md` 是给 AI 的任务包，不是整理结果。你可以用两种方式处理：
+`_ai-request.md` 是给 AI 的任务包，不是整理结果。默认完成标准不是“生成 request”，而是当天目录里同时存在：
+
+- `_ai-feed.md`
+- `_ai-request.md`
+- `_ai-audit.md`
+- `_cyberlog.md`
+- `_tomorrow-boot.md`
+- `_ai-output-audit.md`
+
+你可以用两种方式触发完整处理：
 
 1. 在聊天窗口里打开当天的 `_ai-request.md`，复制全部内容，粘贴给 AI。
 2. 在 Codex 工作区里直接说：`处理 Daily/compiled/YYYY-MM-DD/_ai-request.md，并保存 _cyberlog.md 和 _tomorrow-boot.md`。
 
-AI 输出后建议保存为：
+如果 AI/Codex 有文件写入能力，它应该直接保存：
 
 - `Daily/compiled/YYYY-MM-DD/_cyberlog.md`
 - `Daily/compiled/YYYY-MM-DD/_tomorrow-boot.md`
+- `Daily/compiled/YYYY-MM-DD/_ai-output-audit.md`
 
-如果 AI 把两个部分放在同一个回答里，你可以手动拆分。`_cyberlog.md` 保存完整日终整理，`_tomorrow-boot.md` 只保存明天启动包。
+只有在 AI 没有文件写入能力时，才把结果完整输出到聊天窗口，由你手动保存。`_cyberlog.md` 保存完整日终整理，`_tomorrow-boot.md` 只保存明天启动包。
 
 当前脚本不自动调用 AI API。这样可以避免 API key、费用、模型选择和自动覆盖结果的问题。`_ai-audit.md` 用来先审核任务包边界，真正的 AI 输出仍应在保存前过一遍人工检查。
 
-如果需要保留这次人工检查结果，可以额外保存 `_ai-output-audit.md`。它用于记录 AI 输出是否误读草稿状态、是否混入被排除目录、是否把推断升级成事实。
+`_ai-output-audit.md` 用于记录 AI 输出是否误读草稿状态、是否混入被排除目录、是否把推断升级成事实。
 
 ## 每周怎么用
 

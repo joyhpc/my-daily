@@ -82,6 +82,8 @@ class CyberlogTests(unittest.TestCase):
 
             request = (compiled / "_ai-request.md").read_text(encoding="utf-8")
             self.assertIn("# Cyberlog — 2026-05-07", request)
+            self.assertIn("## Codex / Agent 执行模式", request)
+            self.assertIn("_ai-output-audit.md", request)
             self.assertIn("canvas", request)
 
             audit = (compiled / "_ai-audit.md").read_text(encoding="utf-8")

@@ -13,9 +13,17 @@
 
 1. 保留所有原始 notes，不重写、不清理事实轨迹。
 2. 运行 `python tools/cyberlog.py daily --date YYYY-MM-DD` 生成 `_ai-request.md`。
-3. 把 `_ai-request.md` 投喂给 AI。
-4. 将 AI 输出拆分保存到当天目录的 `_cyberlog.md` 和 `_tomorrow-boot.md`。
+3. 默认让 Codex/agent 完整处理 `_ai-request.md`，并保存 `_cyberlog.md`、`_tomorrow-boot.md`、`_ai-output-audit.md`。
+4. 审核 `_ai-audit.md` 和 `_ai-output-audit.md`，确认没有混入被排除目录、没有把草稿或推断升级成事实。
 5. 把明确值得复用的规则候选手动写入 `System/workflow-rules.md`。
+
+当天关闭完成标准：
+- `_ai-feed.md`
+- `_ai-request.md`
+- `_ai-audit.md`
+- `_cyberlog.md`
+- `_tomorrow-boot.md`
+- `_ai-output-audit.md`
 
 ## 我如何处理阻塞
 
@@ -43,6 +51,8 @@
 - 下一步不存在，或已经写入后续任务。
 - 风险、阻塞、未决问题已经显式记录。
 - 未来恢复上下文不需要重新推理整段过程。
+
+对 daily cyberlog 来说，只生成 `_ai-request.md` 不算完成；必须生成并审核 `_cyberlog.md`、`_tomorrow-boot.md` 和 `_ai-output-audit.md`。
 
 ## 我如何做周复盘
 
