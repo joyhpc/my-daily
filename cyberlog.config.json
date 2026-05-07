@@ -1,0 +1,11 @@
+{
+  "daily_root": "Daily",
+  "daily_raw_root": "Daily/raw",
+  "daily_compiled_root": "Daily/compiled",
+  "daily_templates_root": "Daily/templates",
+  "system_root": "System",
+  "reviews_root": "Reviews/weekly",
+  "generated_prefix": "_",
+  "timezone": "local",
+  "weekly_week_basis": "end"
+}
