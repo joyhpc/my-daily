@@ -91,14 +91,23 @@ python tools/cyberlog.py daily --date 2026-05-07
 - `Daily/compiled/2026-05-07/_ai-request.md`
 - `Daily/compiled/2026-05-07/_ai-audit.md`
 
-## 如何把 `_ai-request.md` 喂给 AI
+## 如何处理 `_ai-request.md`
 
-打开当天的 `_ai-request.md`，复制全部内容，粘贴给 AI。AI 输出后建议保存为：
+`_ai-request.md` 是给 AI 的任务包，不是整理结果。你可以用两种方式处理：
+
+1. 在聊天窗口里打开当天的 `_ai-request.md`，复制全部内容，粘贴给 AI。
+2. 在 Codex 工作区里直接说：`处理 Daily/compiled/YYYY-MM-DD/_ai-request.md，并保存 _cyberlog.md 和 _tomorrow-boot.md`。
+
+AI 输出后建议保存为：
 
 - `Daily/compiled/YYYY-MM-DD/_cyberlog.md`
 - `Daily/compiled/YYYY-MM-DD/_tomorrow-boot.md`
 
 如果 AI 把两个部分放在同一个回答里，你可以手动拆分。`_cyberlog.md` 保存完整日终整理，`_tomorrow-boot.md` 只保存明天启动包。
+
+当前脚本不自动调用 AI API。这样可以避免 API key、费用、模型选择和自动覆盖结果的问题。`_ai-audit.md` 用来先审核任务包边界，真正的 AI 输出仍应在保存前过一遍人工检查。
+
+如果需要保留这次人工检查结果，可以额外保存 `_ai-output-audit.md`。它用于记录 AI 输出是否误读草稿状态、是否混入被排除目录、是否把推断升级成事实。
 
 ## 每周怎么用
 
