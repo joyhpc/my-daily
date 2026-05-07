@@ -15,7 +15,16 @@
 
 不要编造。找不到就写“未发现”。
 
+在正式输出前，请先在内部完成一次信息清洗，但不要展开这部分过程：
+1. 按项目聚类：例如 A38 / A57 / cyberlog-workflow / workspace-skills / wiki-sync / 其他。
+2. 给每条信息标记类型：fact / draft / sent-message / ai-suggestion / decision / todo / blocked / closed。
+3. `chatroom`、`未命名`、历史 AI 回答、方案建议类内容，默认只能作为 `ai-suggestion` 或 `合理推断`，不能直接当作事实；只有原文明确出现“已完成 / 已发送 / 已确认 / 等待反馈 / 实测 / 核实”等状态词时，才可升级为事实。
+4. 同一文件里如果同时出现“未发送版本”和“最终发送版本”，必须分别标记，不能合并成一个已发送事实。
+5. 如果一个任务跨多个项目出现，请优先归入最具体项目，不要重复计算推进。
+
 请输出以下结构：
+
+# FILE: _cyberlog.md
 
 # Cyberlog — {{date}}
 
@@ -90,6 +99,8 @@
 
 输出明天早上可以直接使用的启动信息：
 
+# FILE: _tomorrow-boot.md
+
 # Tomorrow Boot Packet — {{next_date}}
 
 ## 明日主线
@@ -158,4 +169,5 @@
 - 不确定就标记为“不确定”。
 - 尽量引用来源文件名。
 - 原始内容里没有的信息不要假装存在。
+- 严格保留 `# FILE: _cyberlog.md` 和 `# FILE: _tomorrow-boot.md` 两个分隔标题，方便拆分保存。
 - 输出要适合直接复制到 _cyberlog.md 和 _tomorrow-boot.md。

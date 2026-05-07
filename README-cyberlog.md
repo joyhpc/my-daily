@@ -89,6 +89,7 @@ python tools/cyberlog.py daily --date 2026-05-07
 
 - `Daily/compiled/2026-05-07/_ai-feed.md`
 - `Daily/compiled/2026-05-07/_ai-request.md`
+- `Daily/compiled/2026-05-07/_ai-audit.md`
 
 ## 如何把 `_ai-request.md` 喂给 AI
 
@@ -132,6 +133,7 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
   "system_root": "System",
   "reviews_root": "Reviews/weekly",
   "generated_prefix": "_",
+  "daily_exclude_dirs": ["chatroom"],
   "timezone": "local",
   "weekly_week_basis": "end"
 }
@@ -146,6 +148,7 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
 - System 文件夹不叫 `System`：修改 `system_root`。
 - 周复盘输出目录不叫 `Reviews/weekly`：修改 `reviews_root`。
 - 生成文件前缀不想用 `_`：修改 `generated_prefix`。
+- 不想把讨论草稿目录喂给 AI：修改 `daily_exclude_dirs`，默认排除 `chatroom`。
 
 `today` 当前使用本机本地日期。`timezone` 字段暂时只是配置记录，脚本不会强制切换时区。
 
@@ -171,10 +174,11 @@ python /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --date
 1. 运行 `python tools/cyberlog.py init`，确认模板创建。
 2. 修改一个模板文件，再运行 `python tools/cyberlog.py init`，确认不会覆盖。
 3. 运行 `python tools/cyberlog.py today`，确认今天的 Daily 文件夹和默认文件存在。
-4. 在 `Daily/raw/YYYY-MM-DD/` 目录写入一个原始文件，并在 `Daily/compiled/YYYY-MM-DD/` 写入 `_cyberlog.md`，运行 `daily`，确认 `_ai-feed.md` 只包含 raw 中非 `_` 开头文件。
+4. 在 `Daily/raw/YYYY-MM-DD/` 目录写入一个原始文件，并在 `Daily/compiled/YYYY-MM-DD/` 写入 `_cyberlog.md`，运行 `daily`，确认 `_ai-feed.md` 只包含 raw 中非 `_` 开头文件，且默认排除 `chatroom/`。
 5. 检查 `_ai-feed.md` 中是否有 `<file path="...">` 文件边界。
-6. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
-7. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
+6. 检查 `_ai-audit.md` 中的 included/excluded 文件清单和 prompt/request 检查。
+7. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
+8. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
 
 也可以运行内置测试：
 

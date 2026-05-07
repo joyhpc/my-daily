@@ -29,7 +29,16 @@ AI 输出后建议保存为：
 
 不要编造。找不到就写“未发现”。
 
+在正式输出前，请先在内部完成一次信息清洗，但不要展开这部分过程：
+1. 按项目聚类：例如 A38 / A57 / cyberlog-workflow / workspace-skills / wiki-sync / 其他。
+2. 给每条信息标记类型：fact / draft / sent-message / ai-suggestion / decision / todo / blocked / closed。
+3. `chatroom`、`未命名`、历史 AI 回答、方案建议类内容，默认只能作为 `ai-suggestion` 或 `合理推断`，不能直接当作事实；只有原文明确出现“已完成 / 已发送 / 已确认 / 等待反馈 / 实测 / 核实”等状态词时，才可升级为事实。
+4. 同一文件里如果同时出现“未发送版本”和“最终发送版本”，必须分别标记，不能合并成一个已发送事实。
+5. 如果一个任务跨多个项目出现，请优先归入最具体项目，不要重复计算推进。
+
 请输出以下结构：
+
+# FILE: _cyberlog.md
 
 # Cyberlog — 2026-05-07
 
@@ -104,6 +113,8 @@ AI 输出后建议保存为：
 
 输出明天早上可以直接使用的启动信息：
 
+# FILE: _tomorrow-boot.md
+
 # Tomorrow Boot Packet — 2026-05-08
 
 ## 明日主线
@@ -172,6 +183,7 @@ AI 输出后建议保存为：
 - 不确定就标记为“不确定”。
 - 尽量引用来源文件名。
 - 原始内容里没有的信息不要假装存在。
+- 严格保留 `# FILE: _cyberlog.md` 和 `# FILE: _tomorrow-boot.md` 两个分隔标题，方便拆分保存。
 - 输出要适合直接复制到 _cyberlog.md 和 _tomorrow-boot.md。
 
 ## AI Feed
@@ -401,128 +413,6 @@ FAE 建议不要由硬件侧单独手工定 pin，最好由 FPGA/逻辑侧先建
 - **单点勾选异常：** 对于后 2 通道，单点 DEV3 对应的 SerDes 接收必然出问题；若同时勾选 DEV3 和 DEV4，对应接收情况会有所改善。
     
 - **管脚初始状态差异：** 前期曾在 FPGA 侧抓到 4 组 `aux_in` 初始状态存在通道间差异，尝试在逻辑侧弱下拉统一电平但失效。此现象一度怀疑是外部链路漏电/电平转换芯片问题，但随着今晚确认 AUX 指令能正常跑完，此管脚初始电平差异被证明未阻塞底层的协议握手。当前主攻方向已转移至解码芯片源头。
-</file>
-<file path="Daily/raw/2026-05-07/5月7日_extracted/chatroom/未命名.md">
-这种情况下，我重新跑一便，怎么确保不会和之前数据造成困扰？直接覆盖删除？
-给我新旧架构图，并且告诉我你是怎么执行生成架构图的？
-
-现在回到主路径，分析我应该如何设计。
-
-
-
-
-可选方案
-
-  A. 一步到位启用 A5ED HPS
-  把 A5ED 当 SoC 用，HPS 接管一部分 MCU/管理/升级/boot/control path。
-
-  优点：架构潜力最大，长期平台化更好。
-  缺点：原理图、固件、boot、升级、量产测试全部复杂化。
-
-  B. 先做 Fabric 主控替换，HPS 硬件预留但不承担关键功能
-  A5ED 仍按最终目标器件设计，HPS 供电/boot/debug 基础条件留好，但第一版把 DF108 关键控制链路尽量保持在 FPGA fabric / 既有控制路径上。
-
-  优点：风险最小，最符合“旧图正确 + 新封装占位”的当前阶段。
-  缺点：A5ED 的 HPS 价值第一版没有完全释放。
-
-  我建议你选
-
-  选 B：HPS 预留、Fabric 先替换 KU040 主路径。
-
-  也就是说，当前设计目标先写成：
-
-  DF108 外设域保持不变；
-  KU040 fabric 逻辑迁移到 Agilex 5 fabric；
-  A5ED HPS 先完成硬件可用性预留，不作为第一版关键控制依赖；
-  后续根据软件/升级/控制需求决定是否启用 HPS。
-
-  为什么
-
-  你的最大风险不在“C/D 名称没改”，也不在当前 raw error 数，而在架构耦合失控：
-
-  1. Power Tree 必须重做
-     Agilex 5 的 power rail、sequencing、monitor、SmartVID/PMBus 等不能沿用 KU040。Intel 官方 Power Management Guide 明确把 power tree、power estimation、
-     power generation、I/O sequencing 作为设计阶段内容。
-  2. Pin / bank / transceiver 必须先规划再画图
-     Intel Pin Connection Guidelines 覆盖 FPGA core pins、GTS transceiver pins、HPS pins、power sharing 等。你应该先用官方 pinout + Quartus pin planning 固
-     化 bank/VCCIO/refclk/GTS，再回到原理图，不要先凭封装页连线。
-  3. Boot 模式是架构决策，不是原理图细节
-     Agilex 5 SoC 有 FPGA Configuration First 和 HPS Boot First 这类路径。官方 HPS boot 文档说明 FPGA first 会先完成 FPGA/I/O 配置再释放 HPS；这更接近
-     KU040 原 fabric-centric 产品的迁移节奏。
-  4. 外设保持矩阵是主线
-     8 路 FAKRA、POC、DPS、机壳、光口物理形态是硬约束。每个接口都要有一张表：
-
-  旧 owner / 旧 net / 旧电平 / 旧时序 / 新 owner / 新 bank / 新约束 / 是否保持
-
-  主设计路径
-
-  1. 冻结任务边界
-      - 旧 DF108 原理图 = 正确基线
-      - U9 Agilex = 新封装/方案占位
-      - A5EC/A5ED 名称后续统一
-      - 当前不是 sign-off 图
-  2. 做外设保持矩阵
-      - FAKRA 8 路
-      - POC 电源与控制
-      - DPS
-      - QSFP/光口
-      - 风扇、DC24V、外壳出线、工装接口
-      - 每项标：保持 / 重映射 / 待确认
-  3. 做 A5ED pin planning
-      - 官方 pinout
-      - bank 电压
-      - GTS lane/refclk
-      - DDR/EMIF bank
-      - config/JTAG/SDM pins
-      - HPS pins 是否启用
-      - Quartus 编译出 pin report 后再反推原理图
-  4. 重做 Power Tree
-      - rail list
-      - 最大电流估算
-      - sequencing group
-      - PG/reset 关系
-      - test point / sense / PMBus
-      - HPS rail 即使暂不承担功能，也要按最终器件要求处理
-  5. 定 Configuration / Reset / Boot
-      - 第一版建议 FPGA Configuration First
-      - 保留 JTAG
-      - 明确 flash 类型、RSU 是否需要
-      - 画出 POR -> config -> reset release -> user mode 的时序
-  6. 迁移核心接口
-      - DDR：Vivado MIG 不能复用，转 EMIF
-      - GT/QSFP：转 Agilex GTS lane plan
-      - PCIe/以太网/私有链路：逐项列 IP 等价物
-      - I2C/SPI/UART/GPIO：先保持旧控制语义
-  7. 再开始画正式原理图
-     原理图页面建议：
-      - 00_revision_assumptions
-      - 01_a5ed_power
-      - 02_a5ed_config_jtag_sdm
-      - 03_a5ed_reset_clock
-      - 04_a5ed_ddr_emif
-      - 05_a5ed_gts_optical
-      - 06_a5ed_hps_reserved
-      - 07_peripheral_mapping
-      - 08_debug_testpoints
-
-  如果选错会怎样
-
-  如果现在直接启用 HPS 做关键控制，风险是软件、boot、升级、量产测试一起爆炸。
-  如果完全不管 HPS，又可能浪费 A5ED 选型，后续返工 HPS boot/debug/power。
-  所以最稳的是：硬件按 A5ED SoC 留完整条件，第一版功能迁移按 fabric 主控走。
-
-  你现在只要决定的 1 件事
-
-  先定这条原则：
-
-  本版 DF108 Agilex 5 改版，HPS 是否作为第一版关键功能路径？
-
-  我的建议答案是：
-
-  否。HPS 硬件预留，第一版主路径按 KU040 fabric -> Agilex fabric 迁移。
-
-
-原厂FAE说这个lpddr5的pin assign最好是逻辑工程师，自己建一个工程，来配置lpddr5。整个fpga的管脚分配，都需要在工程里验证ok，再做硬件设计比较稳妥。我怎么在项目群里面询问
 </file>
 <file path="Daily/raw/2026-05-07/5月7日_extracted/今日完成项.md">
 A5EC052AB32A_A38_MAIN 的原理图设计:

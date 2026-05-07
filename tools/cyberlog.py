@@ -26,6 +26,7 @@ DEFAULT_CONFIG = {
     "system_root": "System",
     "reviews_root": "Reviews/weekly",
     "generated_prefix": "_",
+    "daily_exclude_dirs": ["chatroom"],
     "timezone": "local",
     # Default is "end" to match the example: 2026-05-01..2026-05-07 -> 2026-W19.
     # Set to "start" in cyberlog.config.json if you want strict start-date labeling.
@@ -51,7 +52,16 @@ AI_SYNC_PROMPT = """# Daily Cyberlog / 工作画布 AI Sync Prompt
 
 不要编造。找不到就写“未发现”。
 
+在正式输出前，请先在内部完成一次信息清洗，但不要展开这部分过程：
+1. 按项目聚类：例如 A38 / A57 / cyberlog-workflow / workspace-skills / wiki-sync / 其他。
+2. 给每条信息标记类型：fact / draft / sent-message / ai-suggestion / decision / todo / blocked / closed。
+3. `chatroom`、`未命名`、历史 AI 回答、方案建议类内容，默认只能作为 `ai-suggestion` 或 `合理推断`，不能直接当作事实；只有原文明确出现“已完成 / 已发送 / 已确认 / 等待反馈 / 实测 / 核实”等状态词时，才可升级为事实。
+4. 同一文件里如果同时出现“未发送版本”和“最终发送版本”，必须分别标记，不能合并成一个已发送事实。
+5. 如果一个任务跨多个项目出现，请优先归入最具体项目，不要重复计算推进。
+
 请输出以下结构：
+
+# FILE: _cyberlog.md
 
 # Cyberlog — {{date}}
 
@@ -126,6 +136,8 @@ AI_SYNC_PROMPT = """# Daily Cyberlog / 工作画布 AI Sync Prompt
 
 输出明天早上可以直接使用的启动信息：
 
+# FILE: _tomorrow-boot.md
+
 # Tomorrow Boot Packet — {{next_date}}
 
 ## 明日主线
@@ -194,6 +206,7 @@ AI_SYNC_PROMPT = """# Daily Cyberlog / 工作画布 AI Sync Prompt
 - 不确定就标记为“不确定”。
 - 尽量引用来源文件名。
 - 原始内容里没有的信息不要假装存在。
+- 严格保留 `# FILE: _cyberlog.md` 和 `# FILE: _tomorrow-boot.md` 两个分隔标题，方便拆分保存。
 - 输出要适合直接复制到 _cyberlog.md 和 _tomorrow-boot.md。
 """
 
@@ -448,6 +461,7 @@ python tools/cyberlog.py daily --date 2026-05-07
 
 - `Daily/compiled/2026-05-07/_ai-feed.md`
 - `Daily/compiled/2026-05-07/_ai-request.md`
+- `Daily/compiled/2026-05-07/_ai-audit.md`
 
 ## 如何把 `_ai-request.md` 喂给 AI
 
@@ -491,6 +505,7 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
   "system_root": "System",
   "reviews_root": "Reviews/weekly",
   "generated_prefix": "_",
+  "daily_exclude_dirs": ["chatroom"],
   "timezone": "local",
   "weekly_week_basis": "end"
 }
@@ -505,6 +520,7 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
 - System 文件夹不叫 `System`：修改 `system_root`。
 - 周复盘输出目录不叫 `Reviews/weekly`：修改 `reviews_root`。
 - 生成文件前缀不想用 `_`：修改 `generated_prefix`。
+- 不想把讨论草稿目录喂给 AI：修改 `daily_exclude_dirs`，默认排除 `chatroom`。
 
 `today` 当前使用本机本地日期。`timezone` 字段暂时只是配置记录，脚本不会强制切换时区。
 
@@ -530,10 +546,11 @@ python /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --date
 1. 运行 `python tools/cyberlog.py init`，确认模板创建。
 2. 修改一个模板文件，再运行 `python tools/cyberlog.py init`，确认不会覆盖。
 3. 运行 `python tools/cyberlog.py today`，确认今天的 Daily 文件夹和默认文件存在。
-4. 在 `Daily/raw/YYYY-MM-DD/` 目录写入一个原始文件，并在 `Daily/compiled/YYYY-MM-DD/` 写入 `_cyberlog.md`，运行 `daily`，确认 `_ai-feed.md` 只包含 raw 中非 `_` 开头文件。
+4. 在 `Daily/raw/YYYY-MM-DD/` 目录写入一个原始文件，并在 `Daily/compiled/YYYY-MM-DD/` 写入 `_cyberlog.md`，运行 `daily`，确认 `_ai-feed.md` 只包含 raw 中非 `_` 开头文件，且默认排除 `chatroom/`。
 5. 检查 `_ai-feed.md` 中是否有 `<file path=\"...\">` 文件边界。
-6. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
-7. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
+6. 检查 `_ai-audit.md` 中的 included/excluded 文件清单和 prompt/request 检查。
+7. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
+8. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
 
 也可以运行内置测试：
 
@@ -568,6 +585,7 @@ CONFIG_TEMPLATE = """{
   "system_root": "System",
   "reviews_root": "Reviews/weekly",
   "generated_prefix": "_",
+  "daily_exclude_dirs": ["chatroom"],
   "timezone": "local",
   "weekly_week_basis": "end"
 }
@@ -623,6 +641,7 @@ class Config:
     system_root: Path
     reviews_root: Path
     generated_prefix: str
+    daily_exclude_dirs: tuple[str, ...]
     timezone: str
     weekly_week_basis: str
 
@@ -675,6 +694,11 @@ def load_config(root_arg: str | None = None) -> Config:
         if not isinstance(raw[key], str):
             raise CyberlogError(f"Config key '{key}' must be a string.")
 
+    if not isinstance(raw["daily_exclude_dirs"], list) or not all(
+        isinstance(item, str) for item in raw["daily_exclude_dirs"]
+    ):
+        raise CyberlogError("Config key 'daily_exclude_dirs' must be a list of strings.")
+
     generated_prefix = raw["generated_prefix"]
     if not generated_prefix:
         raise CyberlogError("Config key 'generated_prefix' cannot be empty.")
@@ -685,6 +709,10 @@ def load_config(root_arg: str | None = None) -> Config:
     if weekly_week_basis not in {"start", "end"}:
         raise CyberlogError("Config key 'weekly_week_basis' must be 'start' or 'end'.")
 
+    daily_exclude_dirs = tuple(item.strip() for item in raw["daily_exclude_dirs"] if item.strip())
+    if any("/" in item or "\\" in item for item in daily_exclude_dirs):
+        raise CyberlogError("Config key 'daily_exclude_dirs' must contain directory names, not paths.")
+
     return Config(
         workspace_root=workspace_root,
         daily_root=resolve_path(workspace_root, raw["daily_root"]),
@@ -694,6 +722,7 @@ def load_config(root_arg: str | None = None) -> Config:
         system_root=resolve_path(workspace_root, raw["system_root"]),
         reviews_root=resolve_path(workspace_root, raw["reviews_root"]),
         generated_prefix=generated_prefix,
+        daily_exclude_dirs=daily_exclude_dirs,
         timezone=raw["timezone"],
         weekly_week_basis=weekly_week_basis,
     )
@@ -731,11 +760,40 @@ def is_raw_markdown(path: Path, generated_prefix: str) -> bool:
     return path.is_file() and path.suffix.lower() == ".md" and not path.name.startswith(generated_prefix)
 
 
+def excluded_daily_dir(path: Path, raw_dir: Path, exclude_dirs: Iterable[str]) -> str | None:
+    exclude_lookup = {item.lower() for item in exclude_dirs}
+    try:
+        parts = path.relative_to(raw_dir).parts[:-1]
+    except ValueError:
+        parts = path.parts[:-1]
+    for part in parts:
+        if part.lower() in exclude_lookup:
+            return part
+    return None
+
+
+def daily_markdown_candidates(raw_dir: Path) -> list[Path]:
+    return sorted((path for path in raw_dir.rglob("*.md") if path.is_file()), key=lambda path: path.relative_to(raw_dir).as_posix())
+
+
+def daily_source_files(raw_dir: Path, config: Config) -> tuple[list[Path], list[tuple[Path, str]]]:
+    included: list[Path] = []
+    excluded: list[tuple[Path, str]] = []
+    for path in daily_markdown_candidates(raw_dir):
+        if path.name.startswith(config.generated_prefix):
+            excluded.append((path, f"generated prefix `{config.generated_prefix}`"))
+            continue
+        excluded_dir = excluded_daily_dir(path, raw_dir, config.daily_exclude_dirs)
+        if excluded_dir:
+            excluded.append((path, f"excluded directory `{excluded_dir}`"))
+            continue
+        included.append(path)
+    return included, excluded
+
+
 def markdown_files_for_daily(raw_dir: Path, config: Config) -> list[Path]:
-    return sorted(
-        (path for path in raw_dir.rglob("*.md") if is_raw_markdown(path, config.generated_prefix)),
-        key=lambda path: path.relative_to(raw_dir).as_posix(),
-    )
+    included, _ = daily_source_files(raw_dir, config)
+    return included
 
 
 def file_block(path: Path, config: Config) -> str:
@@ -781,6 +839,101 @@ AI 输出后建议保存为：
 """
 
 
+def status_line(label: str, ok: bool) -> str:
+    return f"- [{'ok' if ok else 'warn'}] {label}"
+
+
+def build_daily_audit(
+    day: dt.date,
+    source_files: list[Path],
+    excluded_files: list[tuple[Path, str]],
+    prompt: str,
+    request: str,
+    config: Config,
+) -> str:
+    risk_patterns = (
+        "可选方案",
+        "我建议你选",
+        "如果选错会怎样",
+        "你现在只要决定的 1 件事",
+        "未发送",
+        "没有发送",
+        "最终发送",
+        "直接复制发送",
+    )
+    risk_hits: list[str] = []
+    for path in source_files:
+        content = path.read_text(encoding="utf-8")
+        hits = [pattern for pattern in risk_patterns if pattern in content]
+        if hits:
+            risk_hits.append(
+                f"- {display_path(path, config.workspace_root)}: {', '.join(hits)}"
+            )
+
+    included_paths = "\n".join(
+        f"- {display_path(path, config.workspace_root)}" for path in source_files
+    )
+    excluded_paths = "\n".join(
+        f"- {display_path(path, config.workspace_root)} — {reason}"
+        for path, reason in excluded_files
+    )
+    prompt_checks = "\n".join(
+        (
+            status_line("prompt contains project clustering guard", "按项目聚类" in prompt),
+            status_line("prompt contains information type labels", "fact / draft / sent-message" in prompt),
+            status_line("prompt downgrades chatroom / historical AI suggestions", "`chatroom`" in prompt),
+            status_line("prompt requires _cyberlog.md delimiter", "# FILE: _cyberlog.md" in prompt),
+            status_line("prompt requires _tomorrow-boot.md delimiter", "# FILE: _tomorrow-boot.md" in prompt),
+        )
+    )
+    request_checks = "\n".join(
+        (
+            status_line("request contains _cyberlog.md delimiter", "# FILE: _cyberlog.md" in request),
+            status_line("request contains _tomorrow-boot.md delimiter", "# FILE: _tomorrow-boot.md" in request),
+            status_line("request has at least one source file", bool(source_files)),
+            status_line(
+                "request excludes configured daily directories",
+                not any(excluded_daily_dir(path, config.daily_raw_root / day.isoformat(), config.daily_exclude_dirs) for path in source_files),
+            ),
+        )
+    )
+    risk_section = "\n".join(risk_hits) if risk_hits else "- 未发现"
+
+    return f"""# AI Request Audit - {day.isoformat()}
+
+## Summary
+
+- Included source files: {len(source_files)}
+- Excluded markdown files: {len(excluded_files)}
+- Configured excluded directories: {', '.join(config.daily_exclude_dirs) if config.daily_exclude_dirs else '未配置'}
+
+## Included Source Files
+
+{included_paths if included_paths else '- 未发现'}
+
+## Excluded Source Files
+
+{excluded_paths if excluded_paths else '- 未发现'}
+
+## Prompt Checks
+
+{prompt_checks}
+
+## Request Checks
+
+{request_checks}
+
+## Potential Mixed-State Or AI-Suggestion Cues In Included Sources
+
+{risk_section}
+
+## Notes
+
+- This audit checks the generated request package, not the AI answer.
+- Files under configured excluded directories should be manually distilled into normal raw notes if they contain decisions, sent messages, or action items.
+"""
+
+
 def command_daily(args: argparse.Namespace, config: Config) -> int:
     day = parse_date(args.date)
     raw_dir = config.daily_raw_root / day.isoformat()
@@ -791,7 +944,7 @@ def command_daily(args: argparse.Namespace, config: Config) -> int:
             "Create it first or run `python tools/cyberlog.py today` for today's folder."
         )
 
-    source_files = markdown_files_for_daily(raw_dir, config)
+    source_files, excluded_files = daily_source_files(raw_dir, config)
     if not source_files:
         raise CyberlogError(
             f"No raw markdown files found in {display_path(raw_dir, config.workspace_root)}. "
@@ -801,15 +954,21 @@ def command_daily(args: argparse.Namespace, config: Config) -> int:
     feed = join_blocks(source_files, config)
     prompt = read_required_prompt(config.system_root / "ai-sync-prompt.md", config)
     request = build_daily_request(day, prompt, feed)
+    audit = build_daily_audit(day, source_files, excluded_files, prompt, request, config)
 
     feed_path = compiled_dir / f"{config.generated_prefix}ai-feed.md"
     request_path = compiled_dir / f"{config.generated_prefix}ai-request.md"
+    audit_path = compiled_dir / f"{config.generated_prefix}ai-audit.md"
     write_text(feed_path, feed)
     write_text(request_path, request)
+    write_text(audit_path, audit)
 
     print(f"Wrote {display_path(feed_path, config.workspace_root)}")
     print(f"Wrote {display_path(request_path, config.workspace_root)}")
+    print(f"Wrote {display_path(audit_path, config.workspace_root)}")
     print(f"Merged {len(source_files)} raw markdown file(s).")
+    if excluded_files:
+        print(f"Excluded {len(excluded_files)} markdown file(s).")
     return 0
 
 

@@ -67,6 +67,9 @@ class CyberlogTests(unittest.TestCase):
             (raw / "00-canvas.md").write_text("canvas\n", encoding="utf-8")
             (raw / "01-imported.md").write_text("raw notes\n", encoding="utf-8")
             (raw / "_generated.md").write_text("generated should be excluded\n", encoding="utf-8")
+            chatroom = raw / "chatroom"
+            chatroom.mkdir()
+            (chatroom / "未命名.md").write_text("chatroom should be excluded\n", encoding="utf-8")
 
             self.assertEqual(self.run_cli(root, "daily", "--date", "2026-05-07"), 0)
 
@@ -74,11 +77,18 @@ class CyberlogTests(unittest.TestCase):
             self.assertIn('<file path="Daily/raw/2026-05-07/00-canvas.md">', feed)
             self.assertIn('<file path="Daily/raw/2026-05-07/01-imported.md">', feed)
             self.assertNotIn("generated should be excluded", feed)
+            self.assertNotIn("chatroom should be excluded", feed)
             self.assertLess(feed.index("00-canvas.md"), feed.index("01-imported.md"))
 
             request = (compiled / "_ai-request.md").read_text(encoding="utf-8")
             self.assertIn("# Cyberlog — 2026-05-07", request)
             self.assertIn("canvas", request)
+
+            audit = (compiled / "_ai-audit.md").read_text(encoding="utf-8")
+            self.assertIn("Included source files: 2", audit)
+            self.assertIn("Excluded markdown files: 2", audit)
+            self.assertIn("Daily/raw/2026-05-07/chatroom/未命名.md", audit)
+            self.assertIn("excluded directory `chatroom`", audit)
 
     def test_weekly_collects_existing_outputs_and_warns_for_missing(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

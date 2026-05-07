@@ -6,6 +6,7 @@
   "system_root": "System",
   "reviews_root": "Reviews/weekly",
   "generated_prefix": "_",
+  "daily_exclude_dirs": ["chatroom"],
   "timezone": "local",
   "weekly_week_basis": "end"
 }
