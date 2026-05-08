@@ -1,10 +1,10 @@
 # Workflow Rules
 
-## Rule 1: 原始 notes 永不覆盖
+## Rule 1: 原始 notes 在保留期内不可覆盖
 
 触发条件：任何 AI 整理、同步、压缩、改写动作。
-规则：AI 只能生成下划线开头的新文件，不能覆盖原始 notes。
-原因：保留真实工作轨迹，避免 AI 误写污染事实。
+规则：AI 只能生成下划线开头的新文件，不能覆盖原始 notes。raw 是临时事实输入层，不是永久记录层；daily 完整生成并人工审核后，raw 可在 7 天后删除。
+原因：保留短期纠错所需的真实工作轨迹，同时避免 repo 长期堆积低价值原始碎片。
 
 ## Rule 2: 只记录影响系统状态的事件
 
@@ -29,3 +29,15 @@
 触发条件：同类 blocker/friction 在一周内重复出现。
 规则：不要只复盘，要把它沉淀为 workflow rule、template、checklist 或 automation。
 原因：自我迭代必须改变系统，而不是只改变意愿。
+
+## Rule 6: Daily repo 只做底层记录，不做工作空间
+
+触发条件：记录项目资料、采购反馈、设计证据、供应商邮件、外部协作材料时。
+规则：本 repo 只维护 daily 内容和 AI 整理所需的底层数据；只记录状态、结论摘要、阻塞、下一步和外部资料位置，不保存原始工作资产。
+原因：daily cyberlog 的价值是恢复上下文和分析工作流。如果把正式项目资料、采购证据、邮件全文、报价、设计源文件放进来，会污染 raw/compiled 管线，并让 AI feed、weekly review 和 Git 历史反复扩散不该扩散的信息。
+
+## Rule 7: raw 清理必须留下 discard log
+
+触发条件：清理 `Daily/raw/YYYY-MM-DD/`。
+规则：只清理已经完整生成并人工审核的日期目录；删除前默认 dry-run，实际删除必须写入 `Daily/compiled/YYYY-MM-DD/_raw-discard-log.md`，记录文件名、大小和 hash。
+原因：raw 不再永久保存，但清理行为本身要可解释，未来能知道当时丢弃了哪些输入。

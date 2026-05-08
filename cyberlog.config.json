@@ -8,5 +8,6 @@
   "generated_prefix": "_",
   "daily_exclude_dirs": ["chatroom"],
   "timezone": "local",
+  "raw_retention_days": 7,
   "weekly_week_basis": "end"
 }

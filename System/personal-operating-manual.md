@@ -9,16 +9,32 @@
 3. 写下今日主线：今天最希望推进的 1-3 件事。
 4. 从昨天的 `_tomorrow-boot.md` 拿第一动作，直接进入执行。
 
+## 我如何判断 daily 边界
+
+这个 repo 只作为 daily 内容维护和 AI 整理的底层数据，不作为真实工作空间。
+
+可以进入 daily 的内容：
+- 工作状态、事实摘要、决策、阻塞、下一步。
+- 已发送/待发送沟通的状态标记和脱敏摘要。
+- 外部资料的位置或引用线索。
+
+不进入 daily 的内容：
+- 原厂邮件全文、报价、联系人、NDA 或商务条款。
+- 正式设计源文件、项目交付物、采购证据、需要受控归档的原始材料。
+- 会因为进入 `_ai-feed.md`、`_ai-request.md`、`_cyberlog.md` 或 weekly review 而产生扩散风险的内容。
+
 ## 我如何关闭一天
 
-1. 保留所有原始 notes，不重写、不清理事实轨迹。
-2. 运行 `python tools/cyberlog.py daily --date YYYY-MM-DD` 生成 `_ai-request.md`。
+1. 保留当天 raw，不重写、不覆盖事实输入。
+2. 运行 `python3 tools/cyberlog.py daily --date YYYY-MM-DD` 生成 `_ai-request.md` 和 `_ai-context.md`。
 3. 默认让 Codex/agent 完整处理 `_ai-request.md`，并保存 `_cyberlog.md`、`_tomorrow-boot.md`、`_ai-output-audit.md`。
 4. 审核 `_ai-audit.md` 和 `_ai-output-audit.md`，确认没有混入被排除目录、没有把草稿或推断升级成事实。
 5. 把明确值得复用的规则候选手动写入 `System/workflow-rules.md`。
+6. raw 只作为临时事实输入层。daily 完整生成并人工审核后，7 天后可以运行 `python3 tools/cyberlog.py prune-raw --older-than 7 --apply` 清理，只保留 compiled 和 `_raw-discard-log.md`。
 
 当天关闭完成标准：
 - `_ai-feed.md`
+- `_ai-context.md`
 - `_ai-request.md`
 - `_ai-audit.md`
 - `_cyberlog.md`
@@ -57,7 +73,7 @@
 ## 我如何做周复盘
 
 1. 确保每天都有 `_cyberlog.md` 和 `_tomorrow-boot.md`，缺失可以接受但要知道缺口。
-2. 运行 `python tools/cyberlog.py weekly --start YYYY-MM-DD --end YYYY-MM-DD`。
+2. 运行 `python3 tools/cyberlog.py weekly --start YYYY-MM-DD --end YYYY-MM-DD`。
 3. 把生成的 weekly request 投喂给 AI。
 4. 只提取能改变下周行为的结论，不保存流水账总结。
 

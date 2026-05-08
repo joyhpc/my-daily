@@ -13,6 +13,7 @@ my-daily/
     compiled/
       2026-05-07/
         _ai-feed.md
+        _ai-context.md
         _ai-request.md
         _cyberlog.md
         _tomorrow-boot.md
@@ -37,24 +38,25 @@ my-daily/
 
 ## 核心原则
 
-- 原始 notes 永不覆盖。
+- raw 在保留期内不覆盖，完整整理并审核 7 天后可清理。
 - AI 生成内容和原始内容分开。
 - 所有 AI 生成文件使用 `_` 开头。
 - 生成 daily feed 时会排除 `_` 开头的 markdown，避免把 AI 输出再次喂回去。
 - 当前系统不直接调用 OpenAI API，但 Codex/agent 看到 `_ai-request.md` 时默认应完整处理并落盘结果。
+- 本仓库只作为 daily 内容维护和 AI 整理的底层数据，不作为项目工作空间、采购资料库、设计证据库或正式交付资料库。
 
 ## 初始化
 
 在 my-daily 根目录运行：
 
 ```bash
-python tools/cyberlog.py init
+python3 tools/cyberlog.py init
 ```
 
 该命令会创建必要目录和模板文件。已有模板默认不会覆盖。需要重置模板时运行：
 
 ```bash
-python tools/cyberlog.py init --force
+python3 tools/cyberlog.py init --force
 ```
 
 ## 每天怎么用
@@ -62,7 +64,7 @@ python tools/cyberlog.py init --force
 早上或开始工作前创建今天的 Daily 工作画布：
 
 ```bash
-python tools/cyberlog.py today
+python3 tools/cyberlog.py today
 ```
 
 它会创建：
@@ -72,6 +74,8 @@ python tools/cyberlog.py today
 
 `today` 不会往当天 raw 目录写入任何模板文件，避免污染原始输入区。
 
+如果昨天存在 `Daily/compiled/<昨天>/_tomorrow-boot.md`，`today` 会直接打印这份启动包，但不会复制到当天 raw 目录。这样昨天的 AI 输出只作为晨间启动提示，不会混入今天的原始事实来源。
+
 白天继续按原来的习惯自由写 markdown。建议分两类放：
 
 - `Daily/raw/YYYY-MM-DD/`：当天原始输入文件，只放你写入或导入的原始 markdown。
@@ -79,23 +83,38 @@ python tools/cyberlog.py today
 
 你可以新增任意非 `_` 开头的 `.md` 文件，例如 `04-meeting.md`、`05-debug.md`、`06-idea.md`。
 
+也可以用 `capture` 快速记录一条 raw note：
+
+```bash
+python3 tools/cyberlog.py capture "跟进 A38 LPDDR5 供应商正式回复"
+printf "会议结论..." | python3 tools/cyberlog.py capture
+```
+
+`capture` 会写入 `Daily/raw/YYYY-MM-DD/HHMM-capture.md`。如果同一分钟已经存在文件，会自动使用 `HHMM-capture-2.md`，不会覆盖已有 raw note。
+
+`Daily/raw/` 适合保存工作状态、事实摘要、决策、阻塞、下一步和外部资料位置。不适合保存原厂邮件全文、报价、联系人、NDA/商务条款、正式设计源文件、项目交付物或需要长期受控归档的证据材料。这些内容应放在对应的邮箱、采购系统、项目资料库或受控工作空间；daily 中只保留可用于恢复上下文的脱敏摘要。
+
 晚上生成 AI request：
 
 ```bash
-python tools/cyberlog.py daily --date 2026-05-07
+python3 tools/cyberlog.py daily --date 2026-05-07
 ```
 
 它会生成：
 
 - `Daily/compiled/2026-05-07/_ai-feed.md`
+- `Daily/compiled/2026-05-07/_ai-context.md`
 - `Daily/compiled/2026-05-07/_ai-request.md`
 - `Daily/compiled/2026-05-07/_ai-audit.md`
+
+`_ai-feed.md` 只包含当天 raw 目录中非 `_` 开头的 markdown。`_ai-context.md` 单独保存跨日上下文：昨天的 `_cyberlog.md` 和最近 3 天的 `_tomorrow-boot.md`。这些内容只用于识别连续任务和重复 blocker，不作为今天的 raw evidence。
 
 ## 默认完整处理
 
 `_ai-request.md` 是给 AI 的任务包，不是整理结果。默认完成标准不是“生成 request”，而是当天目录里同时存在：
 
 - `_ai-feed.md`
+- `_ai-context.md`
 - `_ai-request.md`
 - `_ai-audit.md`
 - `_cyberlog.md`
@@ -124,7 +143,7 @@ python tools/cyberlog.py daily --date 2026-05-07
 周复盘只读取每天已经整理后的 `_cyberlog.md` 和 `_tomorrow-boot.md`，不会读取原始 daily notes。
 
 ```bash
-python tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
+python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
 ```
 
 它会生成类似：
@@ -135,9 +154,9 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
 
 缺失的 `_cyberlog.md` 或 `_tomorrow-boot.md` 会作为 warning 写入 request，不会导致命令失败。
 
-## 为什么不要覆盖原始 notes
+## 为什么 raw 可清理但不能覆盖
 
-原始 notes 是真实工作轨迹。它们保留了当时的混乱、上下文、误判、阻塞和决策过程。AI 输出是整理层，只能生成 `_` 开头的文件。如果让 AI 覆盖原始 notes，会污染事实来源，也会让后续分析无法判断哪些内容是真实记录、哪些是模型重写。
+raw 是真实工作轨迹的短期输入层。它保留当时的混乱、上下文、误判、阻塞和决策过程，方便当天整理和短期纠错。AI 输出是整理层，只能生成 `_` 开头的文件，不能覆盖 raw。daily 完整生成并人工审核后，raw 不再作为永久记录；7 天后可以清理，只保留 compiled 和 `_raw-discard-log.md`。
 
 ## 配置
 
@@ -154,6 +173,7 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
   "generated_prefix": "_",
   "daily_exclude_dirs": ["chatroom"],
   "timezone": "local",
+  "raw_retention_days": 7,
   "weekly_week_basis": "end"
 }
 ```
@@ -168,48 +188,56 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
 - 周复盘输出目录不叫 `Reviews/weekly`：修改 `reviews_root`。
 - 生成文件前缀不想用 `_`：修改 `generated_prefix`。
 - 不想把讨论草稿目录喂给 AI：修改 `daily_exclude_dirs`，默认排除 `chatroom`。
+- raw 想保留更久或更短：修改 `raw_retention_days`。
 
-`today` 当前使用本机本地日期。`timezone` 字段暂时只是配置记录，脚本不会强制切换时区。
+`today` 和 `capture` 当前使用本机本地日期。需要指定日期时可以使用 `--date YYYY-MM-DD`。`timezone` 字段暂时只是配置记录，脚本不会强制切换时区。
+
+`raw_retention_days` 默认是 `7`。raw 是临时事实输入层，不是永久记录层。当天完整生成并人工审核后，raw 可以在保留期之后用 `prune-raw` 清理；系统会在 compiled 目录保留 `_raw-discard-log.md`。
 
 `weekly_week_basis` 默认是 `end`，因此 `2026-05-01` 到 `2026-05-07` 会生成 `2026-W19_ai-weekly-request.md`。如果你希望严格按 start 日期计算周号，可以改成 `start`。
 
 ## 命令速查
 
 ```bash
-python tools/cyberlog.py init
-python tools/cyberlog.py today
-python tools/cyberlog.py daily --date 2026-05-07
-python tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
+python3 tools/cyberlog.py init
+python3 tools/cyberlog.py today
+python3 tools/cyberlog.py capture "quick note"
+python3 tools/cyberlog.py daily --date 2026-05-07
+python3 tools/cyberlog.py prune-raw --older-than 7
+python3 tools/cyberlog.py prune-raw --older-than 7 --apply
+python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
 ```
 
 如果你不在 my-daily 根目录运行，可以指定 root：
 
 ```bash
-python /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --date 2026-05-07
+python3 /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --date 2026-05-07
 ```
 
 ## 手动测试步骤
 
-1. 运行 `python tools/cyberlog.py init`，确认模板创建。
-2. 修改一个模板文件，再运行 `python tools/cyberlog.py init`，确认不会覆盖。
-3. 运行 `python tools/cyberlog.py today`，确认今天的 Daily 文件夹和默认文件存在。
+1. 运行 `python3 tools/cyberlog.py init`，确认模板创建。
+2. 修改一个模板文件，再运行 `python3 tools/cyberlog.py init`，确认不会覆盖。
+3. 运行 `python3 tools/cyberlog.py today`，确认今天的 Daily 文件夹存在，并在昨天 `_tomorrow-boot.md` 存在时打印启动包。
 4. 在 `Daily/raw/YYYY-MM-DD/` 目录写入一个原始文件，并在 `Daily/compiled/YYYY-MM-DD/` 写入 `_cyberlog.md`，运行 `daily`，确认 `_ai-feed.md` 只包含 raw 中非 `_` 开头文件，且默认排除 `chatroom/`。
-5. 检查 `_ai-feed.md` 中是否有 `<file path="...">` 文件边界。
-6. 检查 `_ai-audit.md` 中的 included/excluded 文件清单和 prompt/request 检查。
-7. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
-8. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
+5. 检查 `_ai-context.md` 只包含历史 compiled 输出，并和 `_ai-feed.md` 分开。
+6. 检查 `_ai-feed.md` 中是否有 `<file path="...">` 文件边界。
+7. 检查 `_ai-audit.md` 中的 included/excluded 文件清单、historical context 清单和 prompt/request 检查。
+8. 运行 `prune-raw --older-than 7`，确认默认只预览；再用临时目录测试 `--apply` 会删除完整 daily 的 raw 并写 `_raw-discard-log.md`。
+9. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
+10. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
 
 也可以运行内置测试：
 
 ```bash
-python tools/test_cyberlog.py
+python3 tools/test_cyberlog.py
 ```
 
 ## 常见问题
 
 ### daily 提示 Daily 日期文件夹不存在
 
-先运行 `python tools/cyberlog.py today` 创建今天目录，或手动创建 `Daily/raw/YYYY-MM-DD/`。
+先运行 `python3 tools/cyberlog.py today` 创建今天目录，或手动创建 `Daily/raw/YYYY-MM-DD/`。
 
 ### daily 提示没有可合并的原始 md 文件
 

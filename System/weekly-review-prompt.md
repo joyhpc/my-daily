@@ -5,6 +5,12 @@
 下面是我这一周每天的 _cyberlog.md 和 _tomorrow-boot.md。
 请分析我的工作流，而不是总结流水账。
 
+边界规则：
+- 周复盘只使用已经审核过的 compiled 输出，不回读 raw。
+- raw 是临时事实输入层，可能已经按保留期清理；不要把 raw 缺失当成记录不完整。
+- `_ai-feed.md` 和 `_ai-request.md` 是生成中间件，不是周复盘的长期事实来源。
+- 如果某天缺少 `_cyberlog.md` 或 `_tomorrow-boot.md`，把它作为记录缺口，不要自行从其他来源补事实。
+
 请输出：
 
 # Weekly Workflow Review — {{start_date}} to {{end_date}}
