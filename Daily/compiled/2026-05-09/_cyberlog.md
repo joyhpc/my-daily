@@ -3,6 +3,7 @@
 ## 1. 今日真实推进
 
 - A38 / Agilex 5 LPDDR5 的 FPGA 端网络连接有实际推进：记录中明确写到“lpddr5 fpga端网络连接好了”；相关工作基于 A5EC052A B32A、两颗独立 x32 LPDDR5、U_LPDDR5_0 -> IO96 bank 2A、U_LPDDR5_1 -> IO96 bank 2B 的假设展开。来源：`今日完成项.md`, `agilex5 lpddr5 pin assign.md`
+- A38 LPDDR5 架构评审后形成执行决策：当前 two independent x32 + bank 2A/2B 继续作为主线，但 LPDDR5 原理图扩面暂停；状态明确标为 `schematic_connected`, `not_signoff`, `pending_quartus`, `pending_fae`, `pending_package_confirm`。来源：`1726-capture.md`
 - LPDDR5 pin assign 的规则边界被澄清：EMIF User Guide Table 22 的 Pin Index 是 FPGA IO96 bank 内部 0-95 号相对位置，不是 LPDDR5 颗粒 ball；当前“两颗 x32 LPDDR5，每颗作为独立 x32 interface”的场景应使用 x32 column，而不是 2 Channel x16 column。来源：`A5EC052A B32A lpddr5 pin assign.md`
 - LP5 网络数量完成统计：U0 63 个、U1 63 个，总计 126 个网络；统计口径排除了空白单元格和占位 `0`。来源：`LP5 网络数量统计.md`
 - A57 / 984 解码板 eDP 问题补充了新的架构和多板验证信息：eDP1/2 对应一颗 DS90UB984，eDP3/4 对应另一颗 DS90UB984；4 块解码板测试显示 eDP1/2/3/4 都有概率出问题，板间表现不同，目前没有一块可以稳定 4 通道出图。来源：`Issue4 A57 edp问题 今日新增.md`
@@ -14,14 +15,14 @@
 
 ### Active
 
-- A38 / Agilex 5 LPDDR5 原理图连接：FPGA 端网络已连接，但仍需要把当前 pin/net 表标记为工作输入，而不是签核证据。
-- A38 LPDDR5 Quartus / Fitter 验证：仍需要用目标 EMIF IP、目标器件、目标 bank 组合跑 test-fit，确认 bank 2A / 2B、x32 topology、REFCLK、RZQ、CA/CK/WCK/DQ byte lane 等能收敛。
+- A38 / Agilex 5 LPDDR5 原理图连接：FPGA 端网络已连接，但当前状态是 `schematic_connected` / `not_signoff`；扩面暂停，不能把 126 网络已连接视为签核。
+- A38 LPDDR5 Quartus / Fitter 验证：明天第一优先级改为 OrCAD 网络核对 + Quartus 最小 EMIF/Fitter 验证 + FAE review，确认 bank 2A / 2B、x32 topology、REFCLK、RZQ、CA/CK/WCK/DQ byte lane 等能收敛。
 - A57 eDP 出图异常：当前从“前后通道差异”转向“多板、多通道、概率性异常 + MODE 配置异常 + 寄存器/厂家确认”的证据收敛。
 - AU15P + Winbond SPI Flash 固化问题：当前关键事实是 AU15P 平台下两个容量 Flash 都在 `0x0000` sector lock 处失败，KU3P 对照正常。
 
 ### Queue
 
-- 把 A38 LPDDR5 当前 CSV / pin-net 表纳入正式设计证据位置，并给每一类网络标注 `working`, `pending_quartus`, `pending_fae`, `pending_package_confirm`。
+- 把 A38 LPDDR5 当前 CSV / pin-net 表纳入正式设计证据位置，并给每一类网络标注 `schematic_connected`, `not_signoff`, `pending_quartus`, `pending_fae`, `pending_package_confirm`。
 - 向 FPGA FAE 确认：A5EC052A B32A 是否支持 two independent LPDDR5 x32 interfaces、推荐 IO96 banks、是否有验证过的 memory vendor/package/part list、是否能提供 QSF / example design。
 - 对 OrCAD 原理图执行一次 LPDDR5 网络核对：U0/U1 各 63 个网络、总 126 个网络，检查 DQ/DMI/RDQS/WCK/CK/CS/CA/RESET_N/RZQ/REFCLK 分类是否缺漏或重名。
 - A57 继续补另外 2 块 984 解码板出图情况，并把 6 块板、4 个 eDP、2 颗 984、MODE 状态、寄存器读值放到同一张矩阵。
@@ -50,6 +51,7 @@
 |---|---|---|---|---|---|
 | 当前两颗 x32 LPDDR5 应按 x32 column 做 pin placement，而不是 2 Channel x16 column | 目标是假设两颗独立 x32 LPDDR5，每颗作为 32-bit EMIF interface | Table 22 的 x32 对应单个 x32 interface；2 Channel x16 是两个独立 x16 channel，CA/CK/WCK 分配不同 | 如果真实拓扑不是两颗独立 x32，当前 CSV / 原理图连接需要重做 | 在 Quartus EMIF 中按 two independent x32 interfaces 建最小工程验证 | `A5EC052A B32A lpddr5 pin assign.md` |
 | 当前 LPDDR5 pin/net 表只能作为工作输入，不能作为签核证据 | 记录中提到已生成 CSV 并完成 FPGA 端网络连接 | 生成表基于官方 pinout + EMIF 规则 + 参考 memory ballout，但还没有 Fitter/FAE 证据 | 若直接签核，可能出现 bank、PLL、RZQ、byte lane、package ball 或 PCB escape 问题 | 标注 `pending_quartus` / `pending_fae` / `pending_package_confirm`，并跑 test-fit | `agilex5 lpddr5 pin assign.md`, `A5EC052A B32A lpddr5 pin assign.md`, `今日完成项.md` |
+| A38 当前架构继续作为主线，但暂停 LPDDR5 原理图扩面 | 外部架构评审后确认当前拓扑可作为主线推进，但缺 Quartus / FAE / 封装证据 | 这样能保留已有原理图进度，同时把潜在 100% 返工压缩成一次 test-fit / review 成本 | 如果把“标准支持场景之一”当事实，或继续扩图，会放大证据缺口 | 明天先做 OrCAD 网络核对、Quartus 最小 EMIF/Fitter 验证和 FAE review | `1726-capture.md` |
 | A57 eDP 问题不再按“后两通道异常”单一路径描述 | 新增 4 块板测试显示 eDP1/2/3/4 都可能异常，且板间表现不同 | 现象跨通道、跨解码芯片且概率性出现，单纯前后通道硬件差异解释力不足 | 如果继续沿用旧叙述，会误导排查方向 | 建立多板 x 多通道矩阵，并把 MODE、寄存器、上电、PWDN、I2C 和出图结果绑定记录 | `Issue4 A57 edp问题 今日新增.md` |
 | A57 下一步优先检查 MODE 配置和寄存器证据 | 电源、PWDN、I2C 看起来没问题，但三个 MODE 都是 0V，且软件侧可能未处理 | SerDes 差异和 IIC/ini 参数对比已基本排除，MODE 是今天新增的明确疑点 | MODE 只是疑点，不能直接写成根因；仍需确认期望电平、采样时机和软件配置 | 先确认 MODE 期望状态、软件配置路径和 984 相关寄存器 | `今日完成项.md`, `Issue4 A57 edp问题 今日新增.md` |
 | AU15P 固化失败应按 AU15P 平台/配置链路问题排查，而不是单一 Flash 容量问题 | AU15P + W25Q256 和 AU15P + W25Q128 都失败，KU3P + W25Q256 成功 | 同一 AU15P 平台不同容量 Flash 都报 `0x0000` locked，容量本身不是唯一变量 | 仍不能排除 flash protection 默认状态、工具识别、约束或板级连接差异 | 读取 status register / protection bit，执行 unlock / erase，并保留 Vivado 日志 | `issue5 AU15P + winbond flash 用jtag+vivado方式无法固化问题.md` |
@@ -57,6 +59,8 @@
 ## 4. 重要信息
 
 - A38 当前 pin assign 假设：FPGA 为 A5EC052A B32A；U_LPDDR5_0 使用 IO96 bank 2A；U_LPDDR5_1 使用 IO96 bank 2B；两颗 LPDDR5 均按独立 x32 interface。
+- A38 架构评审后的边界：two independent x32 + bank 2A/2B 只能写成“当前主线 / 待验证合理方案”，不能写成“官方标准支持场景已确认”；证据闭环需要 Quartus / Fitter / FAE。
+- 如果 8GB 整板容量不被接受，下一步应寻找 2GB x32 / 16Gb x32 长生命周期料号或重评容量/位宽拓扑；不能用“换更大密度”作为容量下降路径。
 - EMIF Pin Index 映射链路是：EMIF User Guide Pin Index -> A5EC052A B32A pinout xlsx 中的 FPGA package ball -> LPDDR5 颗粒 pin name / ball。
 - 示例映射：Table 22 中 Pin Index 0 = MEM_DQ[0]；若使用 A5EC052A B32A bank 2A，index 0 = FPGA ball CL91；再接到 LPDDR5 颗粒 DQ0_A / ball D1 这类 memory-side ball。
 - `FPGA_RZQ` 是 FPGA OCT 电阻脚，不是 LPDDR5 颗粒 ZQ；`REFCLK_P/N` 接 EMIF PLL reference clock，不接内存颗粒。
@@ -71,6 +75,7 @@
 ## 5. 今日产出
 
 - A38 LPDDR5 FPGA 端网络连接：属于 A38 / Agilex 5 原理图；来源 `今日完成项.md`；可复用价值是原理图 LPDDR5 页已经进入可核对状态，但仍需 Quartus / FAE 签核。
+- A38 LPDDR5 架构 go/no-go 决策：属于 A38 / Agilex 5 架构评审；来源 `1726-capture.md`；可复用价值是明确当前架构继续作为主线，但扩面暂停，先补 OrCAD 核对、Quartus/Fitter 和 FAE review。
 - A38 LPDDR5 pin assign 规则说明：属于 A38 / Agilex 5 pin planning；来源 `A5EC052A B32A lpddr5 pin assign.md`; 可复用价值是明确 x32 column、Pin Index、FPGA ball、memory ball 的层级关系，避免把 2 Channel x16 或 memory ball 误用于当前拓扑。
 - A38 LP5 网络数量统计：属于 A38 / OrCAD 原理图核对；来源 `LP5 网络数量统计.md`；可复用价值是给 ERC / netlist / 原理图 review 提供数量基线。
 - A57 Issue4 新输入：属于 A57 / 984 解码板 eDP 出图；来源 `Issue4 A57 edp问题 今日新增.md`；可复用价值是把昨天单板/后通道叙述修正为多板概率性问题，并补充架构、Redriver 配置时机和测试方法。
@@ -81,8 +86,8 @@
 
 | 任务 | 所属项目 | 下一步动作 | 优先级 | 是否适合交给 AI / agent | 为什么 |
 |---|---|---|---|---|---|
-| 跑 A38 LPDDR5 Quartus EMIF / Pin Planner / Fitter test-fit | A38 | 用 A5EC052A B32A、bank 2A/2B、two independent x32 interfaces 建最小工程并导出报告 | P0 | 部分适合 | AI 可整理参数和验收清单，Quartus 工程需逻辑侧执行 |
-| 核对 OrCAD LPDDR5 原理图网络 | A38 | 按 U0/U1 各 63 个网络对照 CSV / 原理图 netlist，检查缺漏、重名、方向和差分对 | P0 | 适合整理 | AI 可生成核对表或脚本思路，实际 OrCAD 文件需人工/工具执行 |
+| 核对 OrCAD LPDDR5 原理图网络 | A38 | 按 U0/U1 各 63 个网络对照 CSV / 原理图 netlist，检查缺漏、重名、方向和差分对，并标注 `not_signoff` / `pending_*` | P0 | 适合整理 | AI 可生成核对表或脚本思路，实际 OrCAD 文件需人工/工具执行 |
+| 跑 A38 LPDDR5 Quartus EMIF / Pin Planner / Fitter test-fit | A38 | 用 A5EC052A B32A、bank 2A/2B、two independent x32 interfaces 建最小工程并导出 QSF / pin report / fitter report | P0 | 部分适合 | AI 可整理参数和验收清单，Quartus 工程需逻辑侧执行 |
 | 确认 LPDDR5 最终料号和封装 | A38 | 采购/硬件确认是否使用 Micron 315-ball 类封装，若改封装则重核 memory-side ball | P0 | 不完全适合 | AI 可列风险，最终料号和供应链选择需要人判断 |
 | 向 FPGA FAE 确认 LPDDR5 topology 和推荐 pin assignment | A38 | 发送 topology、bank、料号、封装、test-fit 输入，请求 QSF / reference / review | P1 | 适合起草 | AI 可起草问题清单，正式确认来自 FAE |
 | 建立 A57 6 板 x 4 通道测试矩阵 | A57 | 补另外 2 块板，记录每块板 eDP1/2/3/4、984 芯片、MODE、电源/PWDN/I2C、寄存器和出图状态 | P0 | 适合 | AI 可生成表格模板，测试由现场执行 |
@@ -105,7 +110,7 @@
 
 ## 9. 自我迭代建议
 
-1. 明天 A38 不要只继续连线；先把 LPDDR5 每个网络组打上验证状态：`schematic_connected`、`pending_quartus`、`pending_fae`、`pending_memory_package`。这能防止“画完了”被误当成“可签核”。
+1. 明天 A38 不要继续扩 LPDDR5 原理图；先把 LPDDR5 每个网络组打上验证状态：`schematic_connected`、`not_signoff`、`pending_quartus`、`pending_fae`、`pending_package_confirm`，然后进入 Quartus 最小验证闭环。
 2. A57 第一动作是建一张 6 板 x 4 eDP 的矩阵，把 MODE 三个 0V 放成显式字段。只要 MODE 状态没解释清楚，不要急着回到 Redriver 或 SerDes 差异方向。
 3. AU15P 不要继续盲目 Program Configuration Memory Device；先读 Flash status/protection 位并记录 unlock/erase 过程，否则每次失败都只会重复同一个 `0x0000 locked` 结论。
 

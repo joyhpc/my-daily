@@ -1,3 +1,6 @@
+<file path="Daily/raw/2026-05-09/1726-capture.md">
+A38 LPDDR5 架构评审后决策：当前 two independent x32 + bank 2A/2B 架构继续作为主线，但 LPDDR5 原理图扩面暂停。当前状态标记为 schematic_connected, not_signoff, pending_quartus, pending_fae, pending_package_confirm。明天第一优先级改为 OrCAD 网络核对 + Quartus 最小 EMIF/Fitter 验证 + FAE review，不再把 126 网络已连接视为 sign-off。注意：超级 LLM 评审中“标准支持场景之一”只能作为待验证判断，不能当事实；若 8GB 容量不被接受，应寻找 2GB x32/16Gb x32 长生命周期料号或重评容量/位宽，而不是换更大密度。
+</file>
 <file path="Daily/raw/2026-05-09/5月9日_extracted/A5EC052A B32A lpddr5 pin assign.md">
 lpddr5_x32_a5ec052a_b32a_2chips.csv 不是原始下载文件，是我合成的连接表，来源
   是：

@@ -2,7 +2,7 @@
 
 ## Summary
 
-- Included source files: 6
+- Included source files: 7
 - Excluded markdown files: 0
 - Included historical context files: 3
 - Missing historical context files: 1
@@ -10,6 +10,7 @@
 
 ## Included Source Files
 
+- Daily/raw/2026-05-09/1726-capture.md
 - Daily/raw/2026-05-09/5月9日_extracted/A5EC052A B32A lpddr5 pin assign.md
 - Daily/raw/2026-05-09/5月9日_extracted/Issue4 A57 edp问题 今日新增.md
 - Daily/raw/2026-05-09/5月9日_extracted/LP5 网络数量统计.md
