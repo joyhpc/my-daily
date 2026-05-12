@@ -15,8 +15,15 @@ my-daily/
         _ai-feed.md
         _ai-context.md
         _ai-request.md
+        _ai-audit.md
+        _run-state.json
         _cyberlog.md
         _tomorrow-boot.md
+        _ai-output-audit.md
+        _conflicts.md
+        _validation.md
+        _decisions.yml
+        _comms.yml
     templates/
         00-canvas.md
         01-notes.md
@@ -27,11 +34,20 @@ my-daily/
       2026-W19_ai-weekly-request.md
   System/
     ai-sync-prompt.md
+    projects.yml
+    schemas.md
+    decisions-active.md
     weekly-review-prompt.md
     personal-operating-manual.md
     workflow-rules.md
   tools/
     cyberlog.py
+    cyberlog_core/
+      cli.py
+      app.py
+      constants.py
+      models.py
+      templates.py
   cyberlog.config.json
   README-cyberlog.md
 ```
@@ -44,6 +60,15 @@ my-daily/
 - 生成 daily feed 时会排除 `_` 开头的 markdown，避免把 AI 输出再次喂回去。
 - 当前系统不直接调用 OpenAI API，但 Codex/agent 看到 `_ai-request.md` 时默认应完整处理并落盘结果。
 - 本仓库只作为 daily 内容维护和 AI 整理的底层数据，不作为项目工作空间、采购资料库、设计证据库或正式交付资料库。
+
+## 代码结构
+
+- `tools/cyberlog.py`：薄 CLI wrapper，只负责调用 runtime。
+- `tools/cyberlog_core/cli.py`：参数解析和命令分发。
+- `tools/cyberlog_core/app.py`：daily、validate、close-day、weekly、prune 等运行时命令实现。
+- `tools/cyberlog_core/templates.py`：`init` 会落盘的内置 prompt / README / schema 模板。
+- `tools/cyberlog_core/models.py`：共享 dataclass 模型。
+- `tools/cyberlog_core/constants.py`：小型运行常量和默认配置。
 
 ## 初始化
 
@@ -87,10 +112,12 @@ python3 tools/cyberlog.py today
 
 ```bash
 python3 tools/cyberlog.py capture "跟进 A38 LPDDR5 供应商正式回复"
+python3 tools/cyberlog.py capture --type blocker --project A38-DF108-Agilex5 "等待 FAE 确认 SmartVID regulator"
+python3 tools/cyberlog.py capture --type sent --project A38-DF108-Agilex5 --sent-to FAE --subject "SmartVID 问题清单" --waiting-for "regulator confirmation" "已发送 FAE 问题清单"
 printf "会议结论..." | python3 tools/cyberlog.py capture
 ```
 
-`capture` 会写入 `Daily/raw/YYYY-MM-DD/HHMM-capture.md`。如果同一分钟已经存在文件，会自动使用 `HHMM-capture-2.md`，不会覆盖已有 raw note。
+`capture` 会写入 `Daily/raw/YYYY-MM-DD/HHMM-capture.md`。结构化类型会写入 `HHMM-<type>.md`，并带 front matter：`type`、`project`、`trust`、`sent_to`、`subject`、`waiting_for` 等。`daily` 生成 `_ai-feed.md` 时会把这些字段暴露在 `<file ...>` 标签上，帮助 AI 区分事实、草稿、发送、阻塞和普通 note。如果同一分钟已经存在文件，会自动使用 `-2` 后缀，不会覆盖已有 raw note。
 
 `Daily/raw/` 适合保存工作状态、事实摘要、决策、阻塞、下一步和外部资料位置。不适合保存原厂邮件全文、报价、联系人、NDA/商务条款、正式设计源文件、项目交付物或需要长期受控归档的证据材料。这些内容应放在对应的邮箱、采购系统、项目资料库或受控工作空间；daily 中只保留可用于恢复上下文的脱敏摘要。
 
@@ -106,20 +133,29 @@ python3 tools/cyberlog.py daily --date 2026-05-07
 - `Daily/compiled/2026-05-07/_ai-context.md`
 - `Daily/compiled/2026-05-07/_ai-request.md`
 - `Daily/compiled/2026-05-07/_ai-audit.md`
+- `Daily/compiled/2026-05-07/_run-state.json`
 
 `_ai-feed.md` 只包含当天 raw 目录中非 `_` 开头的 markdown。`_ai-context.md` 单独保存跨日上下文：昨天的 `_cyberlog.md` 和最近 3 天的 `_tomorrow-boot.md`。这些内容只用于识别连续任务和重复 blocker，不作为今天的 raw evidence。
 
+如果存在 `System/projects.yml`，`daily` 会把它作为 `Project Registry` 注入 `_ai-request.md`。AI 输出应按 project id 分章节，并用 aliases / forbidden_aliases / constraints 做项目口径校验。
+
 ## 默认完整处理
 
-`_ai-request.md` 是给 AI 的任务包，不是整理结果。默认完成标准不是“生成 request”，而是当天目录里同时存在：
+`_ai-request.md` 是给 AI 的任务包，不是整理结果。`daily` 生成的 request package 包含：
 
 - `_ai-feed.md`
 - `_ai-context.md`
 - `_ai-request.md`
 - `_ai-audit.md`
+
+这些是投喂与审计中间件，不是长期 daily record。`close-day` 运行前的核心输出 gate 是当天目录里同时存在：
+
+- `_ai-audit.md`
 - `_cyberlog.md`
 - `_tomorrow-boot.md`
 - `_ai-output-audit.md`
+
+这 4 个文件表示：输入包已审计、AI 输出已落盘、明日启动包已生成、输出边界已自检。`_ai-feed.md`、`_ai-context.md`、`_ai-request.md` 通常也会存在，但不直接作为 raw 清理 gate。`prune-raw` 现在要求 `_run-state.json` 的 `phase` 为 `closed`，因此应先运行 `close-day`。
 
 你可以用两种方式触发完整处理：
 
@@ -132,6 +168,24 @@ python3 tools/cyberlog.py daily --date 2026-05-07
 - `Daily/compiled/YYYY-MM-DD/_tomorrow-boot.md`
 - `Daily/compiled/YYYY-MM-DD/_ai-output-audit.md`
 
+之后运行：
+
+```bash
+python3 tools/cyberlog.py conflict-scan --date YYYY-MM-DD
+python3 tools/cyberlog.py decisions --rollup --through YYYY-MM-DD
+python3 tools/cyberlog.py validate --date YYYY-MM-DD --write
+python3 tools/cyberlog.py close-day --date YYYY-MM-DD
+```
+
+`conflict-scan` 会生成 `_conflicts.md`，先做静态口径检查：forbidden aliases、LPDDR5/LPDDR5X 共现、项目 constraints 冲突。`decisions --rollup` 会读取每天的 `_decisions.yml`，更新 `System/decisions-active.md`。`validate` 默认只读打印 gate 结果；需要落盘时加 `--write` 生成 `_validation.md`，需要 CI/脚本遇到 blocking 直接失败时加 `--strict`。`close-day` 会串起 conflict scan、decision rollup 和 validation；只有没有 blocking finding 时，才把 `_run-state.json` 标记为 `closed`。
+
+`today`、`daily`、`validate --write` 和 `close-day` 会维护 `_run-state.json`。它记录当前 phase、状态转换、输入 raw 文件 hash，以及 prompt / workflow rules / projects / schemas / config 的 provenance hash。`prune-raw` 只清理 `phase == closed` 的日期。
+
+如果当天有跨日决策或沟通状态变化，建议补：
+
+- `Daily/compiled/YYYY-MM-DD/_decisions.yml`
+- `Daily/compiled/YYYY-MM-DD/_comms.yml`
+
 只有在 AI 没有文件写入能力时，才把结果完整输出到聊天窗口，由你手动保存。`_cyberlog.md` 保存完整日终整理，`_tomorrow-boot.md` 只保存明天启动包。
 
 当前脚本不自动调用 AI API。这样可以避免 API key、费用、模型选择和自动覆盖结果的问题。`_ai-audit.md` 用来先审核任务包边界，真正的 AI 输出仍应在保存前过一遍人工检查。
@@ -140,7 +194,7 @@ python3 tools/cyberlog.py daily --date 2026-05-07
 
 ## 每周怎么用
 
-周复盘只读取每天已经整理后的 `_cyberlog.md` 和 `_tomorrow-boot.md`，不会读取原始 daily notes。
+周复盘只读取每天已经整理后的 compiled 输出，不会读取原始 daily notes。它会优先收集 `_cyberlog.md` 和 `_tomorrow-boot.md`，如果存在 `_decisions.yml`、`_comms.yml`、`_conflicts.md`，也会一起放入 weekly request。
 
 ```bash
 python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
@@ -192,7 +246,7 @@ raw 是真实工作轨迹的短期输入层。它保留当时的混乱、上下�
 
 `today` 和 `capture` 当前使用本机本地日期。需要指定日期时可以使用 `--date YYYY-MM-DD`。`timezone` 字段暂时只是配置记录，脚本不会强制切换时区。
 
-`raw_retention_days` 默认是 `7`。raw 是临时事实输入层，不是永久记录层。当天完整生成并人工审核后，raw 可以在保留期之后用 `prune-raw` 清理；系统会在 compiled 目录保留 `_raw-discard-log.md`。
+`raw_retention_days` 默认是 `7`。raw 是临时事实输入层，不是永久记录层。当天完整生成、通过 `close-day` 标记为 `closed` 后，raw 可以在保留期之后用 `prune-raw` 清理；系统会在 compiled 目录保留 `_raw-discard-log.md`。
 
 `weekly_week_basis` 默认是 `end`，因此 `2026-05-01` 到 `2026-05-07` 会生成 `2026-W19_ai-weekly-request.md`。如果你希望严格按 start 日期计算周号，可以改成 `start`。
 
@@ -202,7 +256,12 @@ raw 是真实工作轨迹的短期输入层。它保留当时的混乱、上下�
 python3 tools/cyberlog.py init
 python3 tools/cyberlog.py today
 python3 tools/cyberlog.py capture "quick note"
+python3 tools/cyberlog.py capture --type todo --project cyberlog-workflow "补 validate 引用追溯"
 python3 tools/cyberlog.py daily --date 2026-05-07
+python3 tools/cyberlog.py conflict-scan --date 2026-05-07
+python3 tools/cyberlog.py decisions --rollup --through 2026-05-07
+python3 tools/cyberlog.py validate --date 2026-05-07 --write
+python3 tools/cyberlog.py close-day --date 2026-05-07
 python3 tools/cyberlog.py prune-raw --older-than 7
 python3 tools/cyberlog.py prune-raw --older-than 7 --apply
 python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
@@ -223,9 +282,13 @@ python3 /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --dat
 5. 检查 `_ai-context.md` 只包含历史 compiled 输出，并和 `_ai-feed.md` 分开。
 6. 检查 `_ai-feed.md` 中是否有 `<file path="...">` 文件边界。
 7. 检查 `_ai-audit.md` 中的 included/excluded 文件清单、historical context 清单和 prompt/request 检查。
-8. 运行 `prune-raw --older-than 7`，确认默认只预览；再用临时目录测试 `--apply` 会删除完整 daily 的 raw 并写 `_raw-discard-log.md`。
-9. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
-10. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
+8. 运行 `conflict-scan --date YYYY-MM-DD`，确认会生成 `_conflicts.md` 并列出 forbidden alias / LPDDR5X 等静态冲突。
+9. 准备 `_decisions.yml` 后运行 `decisions --rollup --through YYYY-MM-DD`，确认会生成 `System/decisions-active.md`。
+10. 运行 `validate --date YYYY-MM-DD`，确认会打印 schema、AI output contract、conflict gate、decision integrity 和 comms aging 检查。
+11. 运行 `close-day --date YYYY-MM-DD`，确认无 blocking 时 `_run-state.json` 进入 `closed`。
+12. 运行 `prune-raw --older-than 7`，确认默认只预览；再用临时目录测试 `--apply` 只会删除 `phase == closed` 的 raw 并写 `_raw-discard-log.md`。
+13. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
+14. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
 
 也可以运行内置测试：
 

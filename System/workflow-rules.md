@@ -41,3 +41,9 @@
 触发条件：清理 `Daily/raw/YYYY-MM-DD/`。
 规则：只清理已经完整生成并人工审核的日期目录；删除前默认 dry-run，实际删除必须写入 `Daily/compiled/YYYY-MM-DD/_raw-discard-log.md`，记录文件名、大小和 hash。
 原因：raw 不再永久保存，但清理行为本身要可解释，未来能知道当时丢弃了哪些输入。
+
+## Rule 8: 跨日决策只能通过 _decisions.yml 的 supersedes 链流转
+
+触发条件：今天的结论与昨天或历史决策不一致。
+规则：必须在 `Daily/compiled/YYYY-MM-DD/_decisions.yml` 中显式写 `supersedes: [<旧决策id>]`，并把旧决策标记为 `superseded`，或确保 `decisions --rollup` 能通过 supersedes 链把旧决策排除出 active view。
+原因：避免 `_cyberlog.md` 决策表反复出现“昨天写过、今天又写一遍但措辞不同”的影子冲突。

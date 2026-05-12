@@ -1,0 +1,116 @@
+# Project Registry
+#
+# This file is the canonical project/alias/constraint layer for daily cyberlog
+# generation. Daily raw notes may use aliases or draft names; compiled outputs
+# should normalize to these project ids and flag forbidden aliases.
+
+projects:
+  - id: A38-DF108-Agilex5
+    aliases:
+      - A38
+      - DF108
+      - A38 / DF108
+      - Agilex 5
+      - Agilex5方案
+      - A38 Agilex 5
+      - A38 Intel Altera Agilex 5
+    status: active
+    priority: P1
+    focus:
+      - first schematic revision
+      - LPDDR5 memory architecture and sourcing
+      - SmartVID / PMBus power tree
+      - SDM / QSPI / clock / reset / config
+      - MIPI / QSFP / HSIO pin planning
+    devices:
+      primary: A5ED052AB32AE2V
+      candidates:
+        - A5ED052A B32A
+        - A5ED065B B32A
+      forbidden_aliases:
+        - A5EC052AB32AE2V
+        - A5EC052A B32A
+      evidence_required:
+        - final ordering code
+        - official pinout / package file
+        - Quartus device support
+        - EMIF / Pin Planner / Fitter output
+        - FAE-confirmed power / SmartVID guidance
+    constraints:
+      memory: "Outbound sourcing constraint is ordinary LPDDR5, not LPDDR5X, x32 package width, 16bit die / die organization, long lifecycle. If LPDDR5X appears as candidate, flag as a conflict until the project explicitly accepts it."
+      pin_freeze: "LPDDR5 / MIPI / QSFP pins cannot be frozen before Quartus EMIF / Pin Planner / Fitter evidence."
+      regulator_path: "Prefer FAE validated SmartVID / PMBus regulator path for VCC/VCCP, including TPS53676 / LTC3882-1 / ISL68223; treat LTC7883 as reference-only until FAE confirms support."
+      sdm_boot: "External QSPI boot defaults to AS x4 Normal mode with MSEL[2:0]=011 unless new evidence overrides it."
+    known_open_gates:
+      - final FPGA ordering code
+      - LPDDR5 versus LPDDR5X acceptance
+      - two x32 memory device capacity acceptance
+      - SmartVID regulator and PMBus mode confirmation
+      - logic-side Quartus minimum project validation
+
+  - id: A57-eDP
+    aliases:
+      - A57
+      - A57 eDP
+      - eDP HBR3
+      - Issue4
+      - 后两通道
+    status: active
+    priority: P1
+    focus:
+      - eDP HBR3 eye diagram criteria
+      - back-channel no-image / SerDes lock investigation
+      - test matrix and pass/fail evidence
+    standards:
+      edp_rx_primary: "eDP 1.4b TP3_EQ, 75mVpp differential / 0.5UI"
+      edp_rx_target: "90mVpp differential / 0.5UI"
+      not_primary: "Do not use ordinary DP RX 75mV / 0.35UI as the main eDP 1.4b conclusion."
+    constraints:
+      evidence_boundary: "Do not mark root cause closed without actual eye diagram, register, mode, multi-board, or timing evidence."
+
+  - id: cyberlog-workflow
+    aliases:
+      - cyberlog
+      - daily
+      - daily cyberlog
+      - workflow
+      - AI sync
+    status: maintenance
+    priority: P2
+    focus:
+      - raw / compiled pipeline
+      - AI request and audit prompts
+      - workflow rules
+      - context recovery
+    constraints:
+      generated_files: "AI may write generated underscore-prefixed files only; do not overwrite raw notes."
+      daily_close_gate: "_ai-feed.md, _ai-context.md, _ai-request.md, _ai-audit.md, _cyberlog.md, _tomorrow-boot.md, and _ai-output-audit.md should exist before raw pruning."
+
+  - id: workspace-skills
+    aliases:
+      - workspace
+      - skills
+      - workspace-skills
+      - sch-reviewer
+      - Agilex skills
+    status: queue
+    priority: P3
+    focus:
+      - project skill extraction
+      - schematic review intermediate representation
+      - reusable SOP / demo assets
+    constraints:
+      priority: "Keep queued unless raw evidence shows active execution on the day."
+
+  - id: wiki-sync
+    aliases:
+      - my wiki
+      - my-wiki
+      - wiki-sync
+      - GitHub wiki
+    status: queue
+    priority: P3
+    focus:
+      - synchronize wiki repository locally
+    constraints:
+      priority: "Keep queued unless the day contains concrete sync action or a blocker."

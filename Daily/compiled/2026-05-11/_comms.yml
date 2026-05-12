@@ -1,0 +1,39 @@
+- id: A38-DF108-Agilex5/smartvid-fae-2026-05-11
+  project: A38-DF108-Agilex5
+  channel: fae_message
+  draft: A5ED052AB32AE2V FAE 沟通.md
+  status: draft
+  sent_to: null
+  sent_at: null
+  waiting_for: FAE regulator / PMBus / Quartus confirmation
+  expected_reply_by: null
+
+- id: A38-DF108-Agilex5/lpddr5-supplier-2026-05-11
+  project: A38-DF108-Agilex5
+  channel: supplier_email
+  draft: a5ed065b_b32a_lpddr5_internal_supplier_drafts.md
+  status: draft
+  sent_to: null
+  sent_at: null
+  waiting_for: supplier ordinary LPDDR5 x32 16bit die lifecycle alternatives and lead time
+  expected_reply_by: null
+
+- id: A38-DF108-Agilex5/lpddr5-internal-2026-05-11
+  project: A38-DF108-Agilex5
+  channel: internal_group
+  draft: lpddr5 群内沟通.md
+  status: draft
+  sent_to: null
+  sent_at: null
+  waiting_for: project acceptance of capacity protocol lifecycle and logic validation gates
+  expected_reply_by: null
+
+- id: A57-eDP/eye-criteria-followup-2026-05-11
+  project: A57-eDP
+  channel: internal_followup
+  draft: eDP眼图标准.md
+  status: draft
+  sent_to: null
+  sent_at: null
+  waiting_for: actual TP3_EQ / RX_EQ measurement data
+  expected_reply_by: null

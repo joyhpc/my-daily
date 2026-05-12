@@ -1,0 +1,69 @@
+- id: A38-DF108-Agilex5/2026-05-11-001
+  project: A38-DF108-Agilex5
+  topic: VCC/VCCP follow SmartVID / PMBus adjustable rail path
+  status: proposed
+  blockers: [FAE regulator and PMBus confirmation, Quartus version confirmation, EPE or Power Analyzer current budget]
+  owner: HW
+  next: Send SmartVID / PMBus question list to FAE and archive the formal reply
+  supersedes: []
+  evidence: [SmartVID PMBus.md, a5ed052a_b32a_vcc_smartvid_power_design_report_zh.md]
+
+- id: A38-DF108-Agilex5/2026-05-11-002
+  project: A38-DF108-Agilex5
+  topic: Name the adjustable core rail A5E_VCC_VID and keep VCC/VCCP on that rail
+  status: proposed
+  blockers: [rail-sharing rules for VCCL VCCPLL HSSI and PLL still need confirmation]
+  owner: HW
+  next: Confirm non-core rail sharing and sense wiring with FAE before schematic freeze
+  supersedes: []
+  evidence: [a5ed052a_b32a_vcc_smartvid_power_design_report_zh.md]
+
+- id: A38-DF108-Agilex5/2026-05-11-003
+  project: A38-DF108-Agilex5
+  topic: Use PMBus Master Mode by default and reserve PWRMGT_ALERT
+  status: proposed
+  blockers: [PMBus address PAGE voltage format and alert requirement not confirmed]
+  owner: HW
+  next: Ask FAE to confirm PMBus topology level shifting pullups and ALERT usage
+  supersedes: []
+  evidence: [SmartVID PMBus.md, draft/smartvid方案.md]
+
+- id: A38-DF108-Agilex5/2026-05-11-004
+  project: A38-DF108-Agilex5
+  topic: Prefer FAE validated regulator path; keep LTC7883 reference-only for now
+  status: proposed
+  blockers: [FAE recommendation, supply and cost check, Quartus support confirmation]
+  owner: HW
+  next: Compare TPS53676 LTC3882-1 ISL68223 and LTC7883 after FAE reply
+  supersedes: []
+  evidence: [a5ed052a_b32a_vcc_reference_schematic_summary_zh.md, draft/LTC7883 + LTC7050.md, draft/smartvid方案.md]
+
+- id: A38-DF108-Agilex5/2026-05-11-005
+  project: A38-DF108-Agilex5
+  topic: External QSPI boot uses AS x4 Normal mode with MSEL[2:0]=011 by default
+  status: validated
+  blockers: [fast configuration requirement not yet stated]
+  owner: HW
+  next: Mirror the setting in schematic notes and Quartus Device and Pin Options
+  supersedes: []
+  evidence: [A5ED065B B32A启动配置.md]
+
+- id: A38-DF108-Agilex5/2026-05-11-006
+  project: A38-DF108-Agilex5
+  topic: LPDDR5 cannot be frozen until supplier reply capacity acceptance and Quartus validation gates close
+  status: proposed
+  blockers: [ordinary LPDDR5 versus LPDDR5X conflict, 2GB x32 long lifecycle candidate gap, final FPGA ordering code missing, EMIF Fitter evidence missing]
+  owner: HW / Project / Procurement / Logic
+  next: Build a gate table with pending accepted rejected status per gate
+  supersedes: []
+  evidence: [a5ed065b_b32a_lpddr5_sourcing_brief.md, a5ed065b_b32a_lpddr5_internal_supplier_drafts.md]
+
+- id: A57-eDP/2026-05-11-001
+  project: A57-eDP
+  topic: Use eDP 1.4b HBR3 TP3_EQ 75mVpp / 0.5UI as primary RX eye criterion
+  status: validated
+  blockers: [actual TP3_EQ or RX_EQ measurement data still needed for pass fail closure]
+  owner: HW / Test
+  next: Backfill actual eye diagram data and produce pass fail table using 75mVpp and 90mVpp thresholds
+  supersedes: []
+  evidence: [eDP眼图.md, eDP眼图标准.md]

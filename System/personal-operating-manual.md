@@ -30,16 +30,20 @@
 3. 默认让 Codex/agent 完整处理 `_ai-request.md`，并保存 `_cyberlog.md`、`_tomorrow-boot.md`、`_ai-output-audit.md`。
 4. 审核 `_ai-audit.md` 和 `_ai-output-audit.md`，确认没有混入被排除目录、没有把草稿或推断升级成事实。
 5. 把明确值得复用的规则候选手动写入 `System/workflow-rules.md`。
-6. raw 只作为临时事实输入层。daily 完整生成并人工审核后，7 天后可以运行 `python3 tools/cyberlog.py prune-raw --older-than 7 --apply` 清理，只保留 compiled 和 `_raw-discard-log.md`。
+6. raw 只作为临时事实输入层。daily 完整生成、审核并通过 `close-day` 标记为 `closed` 后，7 天后可以运行 `python3 tools/cyberlog.py prune-raw --older-than 7 --apply` 清理，只保留 compiled 和 `_raw-discard-log.md`。
 
-当天关闭完成标准：
-- `_ai-feed.md`
-- `_ai-context.md`
-- `_ai-request.md`
+`close-day` 运行前的核心输出 gate：
 - `_ai-audit.md`
 - `_cyberlog.md`
 - `_tomorrow-boot.md`
 - `_ai-output-audit.md`
+
+`_ai-feed.md`、`_ai-context.md`、`_ai-request.md` 是 `daily` 生成的投喂中间件，通常应存在，但不是直接 raw 清理 gate。`prune-raw` 只清理 `_run-state.json` 中 `phase == closed` 的日期。
+
+当天有对应状态时还应生成或更新：
+- `_conflicts.md`（运行 `python3 tools/cyberlog.py conflict-scan --date YYYY-MM-DD` 后生成）
+- `_decisions.yml`（当天有关键决策、状态变化或 supersedes 时必须更新）
+- `_comms.yml`（当天有 draft / sent / waiting_for_reply / replied / closed 沟通状态时必须更新）
 
 ## 我如何处理阻塞
 
@@ -82,3 +86,32 @@
 规则必须包含触发条件、执行动作、原因和证据。
 
 只有当规则能减少未来摩擦、降低上下文恢复成本、改善决策质量或减少重复劳动时，才写入 `System/workflow-rules.md`。
+
+## 我如何关闭一天的冲突
+
+1. 先运行 `python3 tools/cyberlog.py daily --date YYYY-MM-DD` 生成 request 和 audit。
+2. 完成 `_cyberlog.md`、`_tomorrow-boot.md`、`_ai-output-audit.md` 后，运行 `python3 tools/cyberlog.py conflict-scan --date YYYY-MM-DD`。
+3. 审核 `_conflicts.md` 中的 forbidden alias、LPDDR5/LPDDR5X、constraints 冲突；不能当天解决的，必须进入 `_cyberlog.md` 的 Blocked / 未完成任务。
+4. 当天新增或改变的跨日决策写入 `_decisions.yml`；如果替代旧决策，必须写 `supersedes`。
+5. 沟通稿、邮件、群内同步只要影响项目状态，就在 `_comms.yml` 写明 `draft / sent / waiting_for_reply / replied / closed`。
+6. 最后运行 `python3 tools/cyberlog.py decisions --rollup --through YYYY-MM-DD`，更新 `System/decisions-active.md`，作为第二天早上的第一眼视图。
+7. 运行 `python3 tools/cyberlog.py validate --date YYYY-MM-DD`；如需留档，使用 `--write` 生成 `_validation.md`。
+8. 运行 `python3 tools/cyberlog.py close-day --date YYYY-MM-DD`；无 blocking finding 时会把 `_run-state.json` 标记为 `closed`。
+
+## Daily flow 的定义/执行分离
+
+流程定义固定为：
+
+`daily -> AI output -> conflict-scan -> decisions rollup -> validate -> close-day -> prune/weekly`
+
+每一步的职责边界：
+- `_run-state.json`：由 `today`、`daily`、`validate --write`、`close-day` 维护，记录 phase、状态转换、输入 hash 和规则/provenance hash；`prune-raw` 只清理 `closed` 日期。
+- `daily`：只组装输入和 audit，不替 AI 做判断。
+- `AI output`：生成 `_cyberlog.md`、`_tomorrow-boot.md`、`_ai-output-audit.md`，必须人工审核。
+- `conflict-scan`：生成 `_conflicts.md`，把口径冲突从叙述中抽成 gate finding。
+- `decisions rollup`：生成 `System/decisions-active.md`，只展示未 frozen / superseded 的决策。
+- `validate`：只读校验 schema、AI output contract、conflict gate、decision integrity、comms aging；默认打印，不写文件。
+- `close-day`：串起 conflict scan、decision rollup 和 validation；只有无 blocking finding 才关闭当天。
+- `weekly`：只读取 compiled 输出和结构化状态，不回读 raw。
+
+如果 `validate --date YYYY-MM-DD` 出现 `blocking`，当天不能视作关闭；必须解决、显式接受，或把它记录为下一天的阻塞。

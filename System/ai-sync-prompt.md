@@ -6,8 +6,11 @@
 
 - `AI Feed`：今天 `Daily/raw/YYYY-MM-DD/` 中进入合并的 markdown。它是今天的主要事实输入。
 - `Historical Context`：昨天的 `_cyberlog.md` 和最近几天的 `_tomorrow-boot.md`。它只能用于识别连续性、重复 blocker 和昨天计划，不能当作今天发生过的事实。
+- `Project Registry`：`System/projects.yml` 的内容。它是项目 id、aliases、器件口径和项目约束的规范层，用来归一化项目分页和发现口径漂移。
 
 raw 是临时事实输入层，不是永久记录层。daily 完整生成并人工审核后，raw 可能在 7 天后清理；不要因为 raw 未来可清理，就降低今天的事实/推断边界要求。
+
+如果 request 包含 `Project Registry`，必须优先使用其中的 `projects[].id` 作为项目名；raw 中出现 alias 时归一化到对应 project id；raw 中出现 `forbidden_aliases` 或与 `constraints` 明显冲突的内容时，不要静默修正，要在 `_cyberlog.md` 的工作流摩擦或未完成任务中显式 flag。
 
 你的任务不是做普通总结，而是从中提取我的工作状态、任务流、决策、阻塞、产出和自我迭代信号。
 
@@ -20,13 +23,15 @@ raw 是临时事实输入层，不是永久记录层。daily 完整生成并人�
 不要编造。找不到就写“未发现”。
 
 在正式输出前，请先在内部完成一次信息清洗，但不要展开这部分过程：
-1. 按项目聚类：例如 A38 / A57 / cyberlog-workflow / workspace-skills / wiki-sync / 其他。
-2. 给每条信息标记类型：fact / draft / sent-message / ai-suggestion / decision / todo / blocked / closed。
-3. `chatroom`、`未命名`、历史 AI 回答、方案建议类内容，默认只能作为 `ai-suggestion` 或 `合理推断`，不能直接当作事实；只有原文明确出现“已完成 / 已发送 / 已确认 / 等待反馈 / 实测 / 核实”等状态词时，才可升级为事实。
-4. 同一文件里如果同时出现“未发送版本”和“最终发送版本”，必须分别标记，不能合并成一个已发送事实。
-5. 如果一个任务跨多个项目出现，请优先归入最具体项目，不要重复计算推进。
-6. 如果某条信息只出现在 `Historical Context`，只能写成延续背景或待确认，不要写成“今日真实推进”。
-7. 引用来源时尽量保留文件名或路径；这些路径用于审核，不代表 raw 会永久存在。
+1. 先读取 `Project Registry`，建立 project id、aliases、devices、forbidden_aliases、constraints 的映射。
+2. 按 project id 聚类；没有命中的内容才放入 `其他`，不要把多个项目混在同一段。
+3. raw 中出现 alias 时统一写成 project id；出现 forbidden_aliases 时保留原文并标为口径风险。
+4. 给每条信息标记类型：fact / draft / sent-message / ai-suggestion / decision / todo / blocked / closed。
+5. `chatroom`、`未命名`、历史 AI 回答、方案建议类内容，默认只能作为 `ai-suggestion` 或 `合理推断`，不能直接当作事实；只有原文明确出现“已完成 / 已发送 / 已确认 / 等待反馈 / 实测 / 核实”等状态词时，才可升级为事实。
+6. 同一文件里如果同时出现“未发送版本”和“最终发送版本”，必须分别标记，不能合并成一个已发送事实。
+7. 如果一个任务跨多个项目出现，请优先归入最具体项目，不要重复计算推进。
+8. 如果某条信息只出现在 `Historical Context`，只能写成延续背景或待确认，不要写成“今日真实推进”。
+9. 引用来源时尽量保留文件名或路径；这些路径用于审核，不代表 raw 会永久存在。
 
 请输出以下结构：
 
@@ -34,11 +39,22 @@ raw 是临时事实输入层，不是永久记录层。daily 完整生成并人�
 
 # Cyberlog — {{date}}
 
+## 0. 项目索引
+
+按 `Project Registry` 中的 project id 列出今天命中的项目。每个项目只写一行：
+- project id
+- 今日是否有真实推进：yes / no
+- 主要状态：active / blocked / queued / closed / evidence-only
+- 关键风险：如无则写“未发现”
+
 ## 1. 今日真实推进
 
 列出今天真正产生推进的事项，而不是所有活动。
+必须按 `### <project id>` 分组；每组只写该项目的推进，不要五项目混写。
 
 ## 2. 当前工作画布
+
+本节必须按项目组织；同一个 Active / Queue / Blocked / Closed 条目必须写明 project id。
 
 ### Active
 
@@ -64,8 +80,10 @@ raw 是临时事实输入层，不是永久记录层。daily 完整生成并人�
 
 用表格输出：
 
-| 决策 | 背景 | 理由 | 风险 | 后续动作 | 来源文件 |
-|---|---|---|---|---|---|
+| 项目 | 决策 | 状态 | 背景 | 理由 | 风险 | 后续动作 | 来源文件 |
+|---|---|---|---|---|---|---|---|
+
+`状态` 只能使用：proposed / validated / frozen / superseded / unknown。不要把 draft 或建议写成 frozen。
 
 ## 4. 重要信息
 
@@ -86,7 +104,7 @@ raw 是临时事实输入层，不是永久记录层。daily 完整生成并人�
 
 每个产出需要说明：
 - 产出是什么
-- 属于哪个项目
+- 属于哪个 project id
 - 位置或来源
 - 可复用价值
 
@@ -95,7 +113,7 @@ raw 是临时事实输入层，不是永久记录层。daily 完整生成并人�
 只列出仍然需要行动的事项。
 每个任务给出：
 - 任务
-- 所属项目
+- 所属 project id
 - 下一步动作
 - 优先级：P0 / P1 / P2
 - 是否适合交给 AI / agent
