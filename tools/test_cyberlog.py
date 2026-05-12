@@ -266,6 +266,21 @@ class CyberlogTests(unittest.TestCase):
             self.assertIn('project="A38-DF108-Agilex5"', feed)
             self.assertIn('trust="high"', feed)
 
+    def test_daily_promotes_lightweight_hash_tags_to_feed_attrs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertEqual(self.run_cli(root, "init"), 0)
+            raw = root / "Daily" / "raw" / "2026-05-07"
+            raw.mkdir(parents=True)
+            (raw / "note.md").write_text("#可信 #已发送\nFAE question list was sent.\n", encoding="utf-8")
+
+            self.assertEqual(self.run_cli(root, "daily", "--date", "2026-05-07"), 0)
+
+            feed = (root / "Daily" / "compiled" / "2026-05-07" / "_ai-feed.md").read_text(encoding="utf-8")
+            self.assertIn('type="sent"', feed)
+            self.assertIn('trust="high"', feed)
+            self.assertIn('tags="#可信 #已发送"', feed)
+
     def test_prune_raw_dry_run_and_apply_respects_completion_gate(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

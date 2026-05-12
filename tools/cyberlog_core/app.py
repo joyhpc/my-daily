@@ -33,8 +33,11 @@ from .constants import (
     CAPTURE_TYPES,
     CONFIG_FILE_NAME,
     DEFAULT_CONFIG,
+    MANAGEMENT_TAG_LIMIT,
     RUN_STATE_FILE_NAME,
     STRUCTURED_CAPTURE_TYPES,
+    TRUST_TAGS,
+    TYPE_TAGS,
 )
 from .models import (
     CommsRecord,
@@ -226,6 +229,34 @@ def parse_yaml_list(value: str) -> tuple[str, ...]:
     return (parsed,)
 
 
+HASHTAG_RE = re.compile(r"(?<![\w-])#([A-Za-z0-9_\-\u4e00-\u9fff]+)")
+
+
+def extract_management_tags(content: str) -> tuple[str, ...]:
+    tags: list[str] = []
+    seen: set[str] = set()
+    for match in HASHTAG_RE.finditer(content):
+        tag = "#" + match.group(1)
+        if tag not in seen:
+            tags.append(tag)
+            seen.add(tag)
+        if len(tags) >= MANAGEMENT_TAG_LIMIT:
+            break
+    return tuple(tags)
+
+
+def normalized_tag(tag: str) -> str:
+    return tag.lstrip("#").strip()
+
+
+def first_tag_value(tags: Iterable[str], mapping: dict[str, str]) -> str:
+    for tag in tags:
+        value = mapping.get(normalized_tag(tag))
+        if value:
+            return value
+    return ""
+
+
 def extract_date(value: str) -> dt.date | None:
     match = re.search(r"(20\d{2}-\d{2}-\d{2})", value)
     if not match:
@@ -388,12 +419,20 @@ def markdown_files_for_daily(raw_dir: Path, config: Config) -> list[Path]:
 
 def file_block(path: Path, config: Config) -> str:
     content = path.read_text(encoding="utf-8")
-    metadata, _ = parse_front_matter(content)
+    metadata, body = parse_front_matter(content)
+    tags = extract_management_tags(body)
     attrs = {"path": display_path(path, config.workspace_root)}
-    for key in ("type", "project", "trust"):
-        value = metadata.get(key, "")
-        if value:
-            attrs[key] = value
+    type_value = first_tag_value(tags, TYPE_TAGS) or metadata.get("type", "")
+    if type_value:
+        attrs["type"] = type_value
+    project = metadata.get("project", "")
+    if project:
+        attrs["project"] = project
+    trust = first_tag_value(tags, TRUST_TAGS) or metadata.get("trust", "")
+    if trust:
+        attrs["trust"] = trust
+    if tags:
+        attrs["tags"] = " ".join(tags)
     attr_text = " ".join(f'{key}="{html.escape(value, quote=True)}"' for key, value in attrs.items())
     if not content.endswith("\n"):
         content += "\n"

@@ -17,6 +17,8 @@ AI_SYNC_PROMPT = """# Daily Cyberlog / 工作画布 AI Sync Prompt
 
 raw 是临时事实输入层，不是永久记录层。daily 完整生成并人工审核后，raw 可能在 7 天后清理；不要因为 raw 未来可清理，就降低今天的事实/推断边界要求。
 
+raw 允许使用极少量 `#标签` 做管理信号，通常每个文件最多一两个。优先识别可信度标签：`#可信` / `#已确认` / `#实测` 表示 high，`#待确认` 表示 medium，`#草稿` / `#未核实` / `#AI建议` 表示 low。需要第二个标签时，可以用 `#已发送`、`#阻塞`、`#待办`、`#决策` 表示轻量类型。标签优先于脚本默认推断；如果标签和正文语义冲突，不要静默修正，要显式标出冲突。
+
 如果 request 包含 `Project Registry`，必须优先使用其中的 `projects[].id` 作为项目名；raw 中出现 alias 时归一化到对应 project id；raw 中出现 `forbidden_aliases` 或与 `constraints` 明显冲突的内容时，不要静默修正，要在 `_cyberlog.md` 的工作流摩擦或未完成任务中显式 flag。
 
 你的任务不是做普通总结，而是从中提取我的工作状态、任务流、决策、阻塞、产出和自我迭代信号。
@@ -33,12 +35,13 @@ raw 是临时事实输入层，不是永久记录层。daily 完整生成并人�
 1. 先读取 `Project Registry`，建立 project id、aliases、devices、forbidden_aliases、constraints 的映射。
 2. 按 project id 聚类；没有命中的内容才放入 `其他`，不要把多个项目混在同一段。
 3. raw 中出现 alias 时统一写成 project id；出现 forbidden_aliases 时保留原文并标为口径风险。
-4. 给每条信息标记类型：fact / draft / sent-message / ai-suggestion / decision / todo / blocked / closed。
-5. `chatroom`、`未命名`、历史 AI 回答、方案建议类内容，默认只能作为 `ai-suggestion` 或 `合理推断`，不能直接当作事实；只有原文明确出现“已完成 / 已发送 / 已确认 / 等待反馈 / 实测 / 核实”等状态词时，才可升级为事实。
-6. 同一文件里如果同时出现“未发送版本”和“最终发送版本”，必须分别标记，不能合并成一个已发送事实。
-7. 如果一个任务跨多个项目出现，请优先归入最具体项目，不要重复计算推进。
-8. 如果某条信息只出现在 `Historical Context`，只能写成延续背景或待确认，不要写成“今日真实推进”。
-9. 引用来源时尽量保留文件名或路径；这些路径用于审核，不代表 raw 会永久存在。
+4. 先读取 `<file ... tags="...">` 和正文中的 `#标签`，按标签优先判断可信度和轻量类型；没有标签时再按 front matter 和正文状态词推断。
+5. 给每条信息标记类型：fact / draft / sent-message / ai-suggestion / decision / todo / blocked / closed。
+6. `chatroom`、`未命名`、历史 AI 回答、方案建议类内容，默认只能作为 `ai-suggestion` 或 `合理推断`，不能直接当作事实；只有原文明确出现“已完成 / 已发送 / 已确认 / 等待反馈 / 实测 / 核实”等状态词时，才可升级为事实。
+7. 同一文件里如果同时出现“未发送版本”和“最终发送版本”，必须分别标记，不能合并成一个已发送事实。
+8. 如果一个任务跨多个项目出现，请优先归入最具体项目，不要重复计算推进。
+9. 如果某条信息只出现在 `Historical Context`，只能写成延续背景或待确认，不要写成“今日真实推进”。
+10. 引用来源时尽量保留文件名或路径；这些路径用于审核，不代表 raw 会永久存在。
 
 请输出以下结构：
 
@@ -340,6 +343,15 @@ PERSONAL_OPERATING_MANUAL = """# Personal Operating Manual
 - `_decisions.yml`（当天有关键决策、状态变化或 supersedes 时必须更新）
 - `_comms.yml`（当天有 draft / sent / waiting_for_reply / replied / closed 沟通状态时必须更新）
 
+## 我如何给 raw 打标签
+
+raw 默认自由写，不需要填表。只有当可信度会影响后续整理时，才在正文开头加一两个 `#标签`：
+- `#可信`：我确认过，可作为事实候选。
+- `#待确认`：有价值但未完全核实，只能作为待确认或合理推断。
+- `#草稿`：草稿、想法或 AI 建议，不得升级为事实。
+
+需要第二个标签时才补类型，例如 `#已发送`、`#阻塞`、`#待办`、`#决策`。标签优先于脚本默认推断。
+
 ## 我如何处理阻塞
 
 阻塞必须写清楚四件事：原因、解除方式、owner、下一步。
@@ -583,6 +595,8 @@ printf "会议结论..." | python3 tools/cyberlog.py capture
 ```
 
 `capture` 会写入 `Daily/raw/YYYY-MM-DD/HHMM-capture.md`。结构化类型会写入 `HHMM-<type>.md`，并带 front matter：`type`、`project`、`trust`、`sent_to`、`subject`、`waiting_for` 等。`daily` 生成 `_ai-feed.md` 时会把这些字段暴露在 `<file ...>` 标签上，帮助 AI 区分事实、草稿、发送、阻塞和普通 note。如果同一分钟已经存在文件，会自动使用 `-2` 后缀，不会覆盖已有 raw note。
+
+也可以不用 front matter，只在 raw 正文开头写一两个 `#标签`。推荐最小集合是 `#可信`、`#待确认`、`#草稿`；需要第二个标签时再补 `#已发送`、`#阻塞`、`#待办`、`#决策`。`daily` 会把前两个标签透传到 `<file tags="...">`，并优先用可信度标签生成 `trust="high|medium|low"`。
 
 `Daily/raw/` 适合保存工作状态、事实摘要、决策、阻塞、下一步和外部资料位置。不适合保存原厂邮件全文、报价、联系人、NDA/商务条款、正式设计源文件、项目交付物或需要长期受控归档的证据材料。这些内容应放在对应的邮箱、采购系统、项目资料库或受控工作空间；daily 中只保留可用于恢复上下文的脱敏摘要。
 

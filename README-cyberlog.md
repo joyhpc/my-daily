@@ -119,6 +119,8 @@ printf "会议结论..." | python3 tools/cyberlog.py capture
 
 `capture` 会写入 `Daily/raw/YYYY-MM-DD/HHMM-capture.md`。结构化类型会写入 `HHMM-<type>.md`，并带 front matter：`type`、`project`、`trust`、`sent_to`、`subject`、`waiting_for` 等。`daily` 生成 `_ai-feed.md` 时会把这些字段暴露在 `<file ...>` 标签上，帮助 AI 区分事实、草稿、发送、阻塞和普通 note。如果同一分钟已经存在文件，会自动使用 `-2` 后缀，不会覆盖已有 raw note。
 
+也可以不用 front matter，只在 raw 正文开头写一两个 `#标签`。推荐最小集合是 `#可信`、`#待确认`、`#草稿`；需要第二个标签时再补 `#已发送`、`#阻塞`、`#待办`、`#决策`。`daily` 会把前两个标签透传到 `<file tags="...">`，并优先用可信度标签生成 `trust="high|medium|low"`。
+
 `Daily/raw/` 适合保存工作状态、事实摘要、决策、阻塞、下一步和外部资料位置。不适合保存原厂邮件全文、报价、联系人、NDA/商务条款、正式设计源文件、项目交付物或需要长期受控归档的证据材料。这些内容应放在对应的邮箱、采购系统、项目资料库或受控工作空间；daily 中只保留可用于恢复上下文的脱敏摘要。
 
 晚上生成 AI request：
