@@ -343,6 +343,14 @@ python3 /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --dat
 python3 tools/test_cyberlog.py
 ```
 
+日常提交前建议跑轻量检查：
+
+```bash
+python3 tools/check.py --date YYYY-MM-DD
+```
+
+这个检查会运行 Python 编译检查、内置测试、daily validation，以及排除 raw/feed/request 证据层之后的 `git diff --check`。如果日期已经 `closed`，validation 会只读运行，避免把 `_run-state.json` 从 `closed` 写回 `validated`。
+
 ## 常见问题
 
 ### daily 提示 Daily 日期文件夹不存在
