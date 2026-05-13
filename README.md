@@ -27,6 +27,7 @@ For AI agents:
 Start here:
 
 - [README-cyberlog.md](README-cyberlog.md)
+- [AI 软件工程：为不确定计算单元设计确定性外壳](docs/mental-models/ai-software-engineering.md)
 - [System/workflow-rules.md](System/workflow-rules.md)
 - [System/personal-operating-manual.md](System/personal-operating-manual.md)
 - [Daily/compiled](Daily/compiled)
