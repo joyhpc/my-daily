@@ -45,6 +45,14 @@
 - `_decisions.yml`（当天有关键决策、状态变化或 supersedes 时必须更新）
 - `_comms.yml`（当天有 draft / sent / waiting_for_reply / replied / closed 沟通状态时必须更新）
 
+## 我如何减少人工复盘成本
+
+1. 每天只看 `validate --write` 生成的 `_validation.md`，优先处理带错误码的 blocking finding。
+2. 不手工维护错误分类；`validate` 会自动标出 `E1..E7`，定义见 `System/error-taxonomy.md`。
+3. 同一个错误码反复出现时，只改一个源头：raw 输入契约、validation 检查或 `System/workflow-rules.md`。
+4. 只有关键日期或高风险错误才运行 `python3 tools/cyberlog.py golden add --date YYYY-MM-DD`。
+5. golden contract 只写必须防复发的断言；不要把整天内容重新标注一遍。
+
 ## 我如何给 raw 打标签
 
 raw 默认自由写，不需要填表。只有当可信度会影响后续整理时，才在正文开头加一两个 `#标签`：

@@ -36,9 +36,11 @@ class CyberlogTests(unittest.TestCase):
             prompt = root / "System" / "ai-sync-prompt.md"
             projects = root / "System" / "projects.yml"
             schemas = root / "System" / "schemas.md"
+            taxonomy = root / "System" / "error-taxonomy.md"
             self.assertTrue(prompt.exists())
             self.assertTrue(projects.exists())
             self.assertTrue(schemas.exists())
+            self.assertTrue(taxonomy.exists())
             prompt.write_text("KEEP ME\n", encoding="utf-8")
 
             self.assertEqual(self.run_cli(root, "init"), 0)
@@ -352,7 +354,7 @@ class CyberlogTests(unittest.TestCase):
             text = report.read_text(encoding="utf-8")
             self.assertIn("Conflict Scan - 2026-05-11", text)
             self.assertIn("Gate result: BLOCKED", text)
-            self.assertIn("[blocking] forbidden_alias", text)
+            self.assertIn("[blocking] E4/forbidden_alias", text)
             self.assertIn("A5EC052A B32A", text)
             self.assertIn("LPDDR5 / LPDDR5X", text)
 
@@ -452,11 +454,12 @@ class CyberlogTests(unittest.TestCase):
             self.assertEqual(result, 0)
             self.assertIn("Cyberlog Validation - 2026-05-11", output)
             self.assertIn("Gate result: BLOCKED", output)
-            self.assertIn("[blocking] forbidden_alias", output)
+            self.assertIn("Error codes: E4 project_boundary, E5 state_drift, E7 output_contract", output)
+            self.assertIn("[blocking] E4/forbidden_alias", output)
             self.assertIn("LPDDR5", output)
-            self.assertIn("[warning] comms_draft_aging", output)
+            self.assertIn("[warning] E5/comms_draft_aging", output)
             self.assertIn("draft for 4 day(s)", output)
-            self.assertIn("[warning] comms_missing_expected_reply_by", output)
+            self.assertIn("[warning] E5/comms_missing_expected_reply_by", output)
             self.assertIn("P0/P1 waiting_for_reply", output)
             self.assertFalse((compiled / "_validation.md").exists())
 
@@ -492,9 +495,33 @@ class CyberlogTests(unittest.TestCase):
             result, output = self.run_cli_output(root, "validate", "--date", "2026-05-07")
 
             self.assertEqual(result, 0)
-            self.assertIn("[blocking] cyberlog_structure", output)
-            self.assertIn("[blocking] tomorrow_boot_structure", output)
-            self.assertIn("[warning] source_reference", output)
+            self.assertIn("[blocking] E7/cyberlog_structure", output)
+            self.assertIn("[blocking] E7/tomorrow_boot_structure", output)
+            self.assertIn("[warning] E2/source_reference", output)
+
+    def test_golden_add_scaffolds_and_check_enforces_assertions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertEqual(self.run_cli(root, "init"), 0)
+
+            self.assertEqual(self.run_cli(root, "golden", "add", "--date", "2026-05-07"), 0)
+
+            contract_path = root / "Reviews" / "golden-days" / "2026-05-07.json"
+            self.assertTrue(contract_path.exists())
+            contract = json.loads(contract_path.read_text(encoding="utf-8"))
+            self.assertIn("E7", contract["observed_error_codes"])
+
+            contract["assertions"]["required_error_codes"] = ["E7"]
+            contract_path.write_text(json.dumps(contract, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            result, output = self.run_cli_output(root, "golden", "check", "--date", "2026-05-07", "--strict")
+            self.assertEqual(result, 0)
+            self.assertIn("Golden Days Report", output)
+            self.assertIn("Observed error codes:", output)
+            self.assertIn("E7", output)
+
+            contract["assertions"]["forbidden_error_codes"] = ["E7"]
+            contract_path.write_text(json.dumps(contract, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            self.assertEqual(self.run_cli(root, "golden", "check", "--date", "2026-05-07", "--strict"), 1)
 
     def test_close_day_marks_closed_and_prune_requires_closed_phase(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

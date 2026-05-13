@@ -11,6 +11,7 @@ from .app import (
     command_conflict_scan,
     command_daily,
     command_decisions,
+    command_golden,
     command_init,
     command_prune_raw,
     command_today,
@@ -86,6 +87,18 @@ def build_parser() -> argparse.ArgumentParser:
     close_day = subparsers.add_parser("close-day", help="Run daily closure gates and mark the day closed when validation passes.")
     close_day.add_argument("--date", required=True, help="Date in YYYY-MM-DD format.")
     close_day.set_defaults(func=command_close_day)
+
+    golden = subparsers.add_parser("golden", help="Manage low-manual-work golden day regression contracts.")
+    golden_subparsers = golden.add_subparsers(dest="golden_command", required=True)
+    golden_add = golden_subparsers.add_parser("add", help="Create a scaffolded golden day contract for one date.")
+    golden_add.add_argument("--date", required=True, help="Date in YYYY-MM-DD format.")
+    golden_add.add_argument("--force", action="store_true", help="Regenerate an existing golden contract.")
+    golden_add.set_defaults(func=command_golden)
+    golden_check = golden_subparsers.add_parser("check", help="Check one or all golden day contracts.")
+    golden_check.add_argument("--date", help="Date in YYYY-MM-DD format. Defaults to all contracts.")
+    golden_check.add_argument("--write", action="store_true", help="Write Reviews/golden-days/_golden-report.md instead of printing.")
+    golden_check.add_argument("--strict", action="store_true", help="Return non-zero when a golden contract fails.")
+    golden_check.set_defaults(func=command_golden)
 
     return parser
 

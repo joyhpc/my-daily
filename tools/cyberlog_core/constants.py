@@ -53,3 +53,40 @@ TYPE_TAGS = {
     "发送": "sent",
     "草稿": "draft",
 }
+
+ERROR_CODE_DEFINITIONS = {
+    "E1": "factual_upgrade",
+    "E2": "source_hallucination",
+    "E3": "context_leak",
+    "E4": "project_boundary",
+    "E5": "state_drift",
+    "E6": "decision_drift",
+    "E7": "output_contract",
+}
+
+FINDING_ERROR_CODES = {
+    "ai_output_audit": "E7",
+    "ai_output_missing": "E7",
+    "comms_draft_aging": "E5",
+    "comms_missing_expected_reply_by": "E5",
+    "comms_reply_overdue": "E5",
+    "comms_schema": "E5",
+    "comms_status": "E5",
+    "cyberlog_blocked_detail": "E7",
+    "cyberlog_decision_table": "E6",
+    "cyberlog_structure": "E7",
+    "decision_duplicate_topic": "E6",
+    "decision_evidence": "E6",
+    "decision_next": "E6",
+    "decision_owner": "E6",
+    "decision_schema": "E6",
+    "decision_supersedes": "E6",
+    "forbidden_alias": "E4",
+    "memory_constraint": "E4",
+    "memory_protocol": "E4",
+    "schema_contract": "E7",
+    "schema_projects": "E4",
+    "source": "E2",
+    "source_reference": "E2",
+    "tomorrow_boot_structure": "E7",
+}

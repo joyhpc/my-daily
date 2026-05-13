@@ -39,10 +39,14 @@ my-daily/
   Reviews/
     weekly/
       2026-W19_ai-weekly-request.md
+    golden-days/
+      2026-05-07.json
+      _golden-report.md
   System/
     ai-sync-prompt.md
     projects.yml
     schemas.md
+    error-taxonomy.md
     decisions-active.md
     weekly-review-prompt.md
     personal-operating-manual.md
@@ -188,12 +192,44 @@ python3 tools/cyberlog.py close-day --date YYYY-MM-DD
 
 `conflict-scan` 会生成 `_conflicts.md`，先做静态口径检查：forbidden aliases、LPDDR5/LPDDR5X 共现、项目 constraints 冲突。`decisions --rollup` 会读取每天的 `_decisions.yml`，更新 `System/decisions-active.md`。`validate` 默认只读打印 gate 结果；需要落盘时加 `--write` 生成 `_validation.md`，需要 CI/脚本遇到 blocking 直接失败时加 `--strict`。`close-day` 会串起 conflict scan、decision rollup 和 validation；只有没有 blocking finding 时，才把 `_run-state.json` 标记为 `closed`。
 
+`validate` 输出会自动带错误类型，例如 `E2/source_reference`、`E4/forbidden_alias`、`E5/comms_draft_aging`。错误类型定义在 `System/error-taxonomy.md`。你不需要每天手工分类；只有同类错误反复出现时，再把它沉淀成 raw 输入契约、validation 检查或 `System/workflow-rules.md` 规则。
+
 `today`、`daily`、`validate --write` 和 `close-day` 会维护 `_run-state.json`。它记录当前 phase、状态转换、输入 raw 文件 hash，以及 prompt / workflow rules / projects / schemas / config 的 provenance hash。`prune-raw` 只清理 `phase == closed` 的日期。
 
 如果当天有跨日决策或沟通状态变化，建议补：
 
 - `Daily/compiled/YYYY-MM-DD/_decisions.yml`
 - `Daily/compiled/YYYY-MM-DD/_comms.yml`
+
+## Golden Days 回归
+
+重要日期可以一键生成 golden contract：
+
+```bash
+python3 tools/cyberlog.py golden add --date 2026-05-07
+```
+
+它会写入 `Reviews/golden-days/2026-05-07.json`，自动记录当前 validation 观察到的错误码。默认不要求你填完整标准；只编辑你真正关心的断言，例如：
+
+```json
+{
+  "assertions": {
+    "forbidden_error_codes": ["E2"],
+    "must_not_contain": {
+      "_cyberlog.md": ["LPDDR5X 已冻结"]
+    }
+  }
+}
+```
+
+检查一个或全部 golden day：
+
+```bash
+python3 tools/cyberlog.py golden check --date 2026-05-07 --strict
+python3 tools/cyberlog.py golden check --write
+```
+
+这条路径的目标是减少人工：平时只看 `_validation.md` 的错误码；只有关键失败要防复发时，才把它变成 golden assertion。
 
 只有在 AI 没有文件写入能力时，才把结果完整输出到聊天窗口，由你手动保存。`_cyberlog.md` 保存完整日终整理，`_tomorrow-boot.md` 只保存明天启动包。
 
@@ -271,6 +307,8 @@ python3 tools/cyberlog.py conflict-scan --date 2026-05-07
 python3 tools/cyberlog.py decisions --rollup --through 2026-05-07
 python3 tools/cyberlog.py validate --date 2026-05-07 --write
 python3 tools/cyberlog.py close-day --date 2026-05-07
+python3 tools/cyberlog.py golden add --date 2026-05-07
+python3 tools/cyberlog.py golden check --strict
 python3 tools/cyberlog.py prune-raw --older-than 7
 python3 tools/cyberlog.py prune-raw --older-than 7 --apply
 python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07

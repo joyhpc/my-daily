@@ -343,6 +343,14 @@ PERSONAL_OPERATING_MANUAL = """# Personal Operating Manual
 - `_decisions.yml`（当天有关键决策、状态变化或 supersedes 时必须更新）
 - `_comms.yml`（当天有 draft / sent / waiting_for_reply / replied / closed 沟通状态时必须更新）
 
+## 我如何减少人工复盘成本
+
+1. 每天只看 `validate --write` 生成的 `_validation.md`，优先处理带错误码的 blocking finding。
+2. 不手工维护错误分类；`validate` 会自动标出 `E1..E7`，定义见 `System/error-taxonomy.md`。
+3. 同一个错误码反复出现时，只改一个源头：raw 输入契约、validation 检查或 `System/workflow-rules.md`。
+4. 只有关键日期或高风险错误才运行 `python3 tools/cyberlog.py golden add --date YYYY-MM-DD`。
+5. golden contract 只写必须防复发的断言；不要把整天内容重新标注一遍。
+
 ## 我如何给 raw 打标签
 
 raw 默认自由写，不需要填表。只有当可信度会影响后续整理时，才在正文开头加一两个 `#标签`：
@@ -509,10 +517,14 @@ my-daily/
   Reviews/
     weekly/
       2026-W19_ai-weekly-request.md
+    golden-days/
+      2026-05-07.json
+      _golden-report.md
   System/
     ai-sync-prompt.md
     projects.yml
     schemas.md
+    error-taxonomy.md
     decisions-active.md
     weekly-review-prompt.md
     personal-operating-manual.md
@@ -658,12 +670,44 @@ python3 tools/cyberlog.py close-day --date YYYY-MM-DD
 
 `conflict-scan` 会生成 `_conflicts.md`，先做静态口径检查：forbidden aliases、LPDDR5/LPDDR5X 共现、项目 constraints 冲突。`decisions --rollup` 会读取每天的 `_decisions.yml`，更新 `System/decisions-active.md`。`validate` 默认只读打印 gate 结果；需要落盘时加 `--write` 生成 `_validation.md`，需要 CI/脚本遇到 blocking 直接失败时加 `--strict`。`close-day` 会串起 conflict scan、decision rollup 和 validation；只有没有 blocking finding 时，才把 `_run-state.json` 标记为 `closed`。
 
+`validate` 输出会自动带错误类型，例如 `E2/source_reference`、`E4/forbidden_alias`、`E5/comms_draft_aging`。错误类型定义在 `System/error-taxonomy.md`。你不需要每天手工分类；只有同类错误反复出现时，再把它沉淀成 raw 输入契约、validation 检查或 `System/workflow-rules.md` 规则。
+
 `today`、`daily`、`validate --write` 和 `close-day` 会维护 `_run-state.json`。它记录当前 phase、状态转换、输入 raw 文件 hash，以及 prompt / workflow rules / projects / schemas / config 的 provenance hash。`prune-raw` 只清理 `phase == closed` 的日期。
 
 如果当天有跨日决策或沟通状态变化，建议补：
 
 - `Daily/compiled/YYYY-MM-DD/_decisions.yml`
 - `Daily/compiled/YYYY-MM-DD/_comms.yml`
+
+## Golden Days 回归
+
+重要日期可以一键生成 golden contract：
+
+```bash
+python3 tools/cyberlog.py golden add --date 2026-05-07
+```
+
+它会写入 `Reviews/golden-days/2026-05-07.json`，自动记录当前 validation 观察到的错误码。默认不要求你填完整标准；只编辑你真正关心的断言，例如：
+
+```json
+{
+  "assertions": {
+    "forbidden_error_codes": ["E2"],
+    "must_not_contain": {
+      "_cyberlog.md": ["LPDDR5X 已冻结"]
+    }
+  }
+}
+```
+
+检查一个或全部 golden day：
+
+```bash
+python3 tools/cyberlog.py golden check --date 2026-05-07 --strict
+python3 tools/cyberlog.py golden check --write
+```
+
+这条路径的目标是减少人工：平时只看 `_validation.md` 的错误码；只有关键失败要防复发时，才把它变成 golden assertion。
 
 只有在 AI 没有文件写入能力时，才把结果完整输出到聊天窗口，由你手动保存。`_cyberlog.md` 保存完整日终整理，`_tomorrow-boot.md` 只保存明天启动包。
 
@@ -741,6 +785,8 @@ python3 tools/cyberlog.py conflict-scan --date 2026-05-07
 python3 tools/cyberlog.py decisions --rollup --through 2026-05-07
 python3 tools/cyberlog.py validate --date 2026-05-07 --write
 python3 tools/cyberlog.py close-day --date 2026-05-07
+python3 tools/cyberlog.py golden add --date 2026-05-07
+python3 tools/cyberlog.py golden check --strict
 python3 tools/cyberlog.py prune-raw --older-than 7
 python3 tools/cyberlog.py prune-raw --older-than 7 --apply
 python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
@@ -792,6 +838,31 @@ python3 tools/test_cyberlog.py
 ### AI 输出要不要自动写回文件
 
 当前版本不自动调用 API，也不自动解析 AI 输出。建议先手动保存，保证你能审核内容质量。
+"""
+
+ERROR_TAXONOMY_TEMPLATE = """# Cyberlog Error Taxonomy
+
+Purpose: turn AI/output mistakes into repeatable categories so validation, golden days, and workflow rules can improve without extra daily bookkeeping.
+
+| Code | Name | Meaning | Usual Fix |
+|---|---|---|---|
+| `E1` | factual_upgrade | Drafts, guesses, or `#待确认` content were upgraded into facts | Tighten raw tags or prompt boundary |
+| `E2` | source_hallucination | Output cites missing or unsupported sources | Fix citation, source path, or validation rule |
+| `E3` | context_leak | Historical context was written as today's progress | Move item to continuity / background |
+| `E4` | project_boundary | Project id, alias, forbidden alias, or constraint boundary drifted | Update `projects.yml` or flag conflict |
+| `E5` | state_drift | Draft/sent/waiting/replied/closed communication state drifted | Update `_comms.yml` or raw capture |
+| `E6` | decision_drift | Decision status, supersedes chain, owner, next action, or evidence drifted | Update `_decisions.yml` |
+| `E7` | output_contract | Required output file or section contract failed | Regenerate or repair AI output |
+
+## Low-manual workflow
+
+1. Run `python3 tools/cyberlog.py validate --date YYYY-MM-DD --write`.
+2. Read the error code labels in `_validation.md`.
+3. If the same code repeats, fix one of three places:
+   - input contract: raw tags or capture habit
+   - deterministic gate: validation/conflict-scan
+   - durable rule: `System/workflow-rules.md`
+4. For an important regression, run `python3 tools/cyberlog.py golden add --date YYYY-MM-DD` and edit only the assertions that matter.
 """
 
 CONFIG_TEMPLATE = """{
@@ -901,6 +972,19 @@ Purpose: machine-readable execution telemetry for the daily pipeline. It is gene
 | `source_files_sha256` | no | map path -> sha256 | Raw files included in `_ai-feed.md` at packaging time | `Daily/raw/.../note.md: ...` |
 | `outputs` | no | map path -> bool | Generated output presence when a phase changed | `_ai-request.md: true` |
 | `validation` | no | object | Last `validate --write` result | `{ "gate_result": "BLOCKED" }` |
+
+## Reviews/golden-days/YYYY-MM-DD.json
+
+Purpose: low-manual regression contract for an important day. It is generated by `golden add`; only edit assertions that matter.
+
+| Field | Required | Allowed / Format | Meaning | Example |
+|---|---:|---|---|---|
+| `date` | yes | ISO date | Golden day date | `2026-05-11` |
+| `observed_error_codes` | no | list of `E1..E7` | Codes seen when scaffolded | `[E4, E7]` |
+| `assertions.required_error_codes` | no | list of codes | Codes that must still appear | `[E4]` |
+| `assertions.forbidden_error_codes` | no | list of codes | Codes that must not appear | `[E2]` |
+| `assertions.must_contain` | no | map file -> list of strings | Output text that must be present | `_cyberlog.md: [LPDDR5]` |
+| `assertions.must_not_contain` | no | map file -> list of strings | Output text that must be absent | `_cyberlog.md: [LPDDR5X frozen]` |
 
 ## Gate Severity
 
