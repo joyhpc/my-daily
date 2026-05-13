@@ -53,3 +53,9 @@
 触发条件：今天的结论与昨天或历史决策不一致。
 规则：必须在 `Daily/compiled/YYYY-MM-DD/_decisions.yml` 中显式写 `supersedes: [<旧决策id>]`，并把旧决策标记为 `superseded`，或确保 `decisions --rollup` 能通过 supersedes 链把旧决策排除出 active view。
 原因：避免 `_cyberlog.md` 决策表反复出现“昨天写过、今天又写一遍但措辞不同”的影子冲突。
+
+## Rule 10: 判断远端日期前必须刷新并反查目标 ref
+
+触发条件：用户询问某个日期是否已经同步远端，或要求处理并同步当天 daily。
+规则：先运行 `git fetch --all --prune --tags`，再分别检查当前分支、`origin/main` 和目标远端分支是否包含 `Daily/compiled/YYYY-MM-DD/`、`Daily/raw/YYYY-MM-DD/`；推送后用 `git ls-remote` 核对远端 hash，并用 `git ls-tree` 反查目标日期路径。
+原因：避免本地 `origin/main` 过期、当前分支和默认 `main` 不一致，导致“远端已有但本地没 fetch”或“推到分支但默认页看不到”的误判。

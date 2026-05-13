@@ -54,6 +54,14 @@
 4. 只有关键日期或高风险错误才运行 `python3 tools/cyberlog.py golden add --date YYYY-MM-DD`。
 5. golden contract 只写必须防复发的断言；不要把整天内容重新标注一遍。
 
+## 我如何确认远端真的同步了
+
+1. 判断远端是否已有某个日期前，先运行 `git fetch --all --prune --tags`。
+2. 同时查当前分支、`origin/main` 和目标远端分支，不只看本地工作树。
+3. 推送后核对 `git ls-remote` 的远端 hash 是否等于本地 HEAD。
+4. 再用 `git ls-tree` 查目标日期目录是否出现在远端 ref 中。
+5. 汇报时必须说明同步到哪个 ref，尤其要区分 `main` 和 `codex/*` 分支。
+
 ## 我如何给 raw 打标签
 
 raw 默认自由写，不需要填表。只有当可信度会影响后续整理时，才在正文开头加一两个 `#标签`：
