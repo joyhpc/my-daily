@@ -23,6 +23,7 @@ from .templates import (
     CANVAS_TEMPLATE,
     CONFIG_TEMPLATE,
     ERROR_TAXONOMY_TEMPLATE,
+    MONTHLY_REVIEW_PROMPT,
     PERSONAL_OPERATING_MANUAL,
     PROJECTS_TEMPLATE,
     README,
@@ -2262,6 +2263,14 @@ def week_label(start: dt.date, end: dt.date, basis: str) -> str:
     return f"{iso_year}-W{iso_week:02d}"
 
 
+def month_label(end: dt.date) -> str:
+    return f"{end.year:04d}-{end.month:02d}"
+
+
+def monthly_reviews_root(config: Config) -> Path:
+    return config.reviews_root.parent / "monthly"
+
+
 def build_weekly_request(
     start: dt.date,
     end: dt.date,
@@ -2348,6 +2357,118 @@ def command_weekly(args: argparse.Namespace, config: Config) -> int:
     return 0
 
 
+def weekly_labels_in_range(start: dt.date, end: dt.date, basis: str) -> list[str]:
+    labels = {week_label(day, day, basis) for day in daterange(start, end)}
+    return sorted(labels)
+
+
+def collect_monthly_sources(
+    start: dt.date,
+    end: dt.date,
+    config: Config,
+) -> tuple[list[Path], list[str]]:
+    collected_paths: list[Path] = []
+    warnings: list[str] = []
+    labels = weekly_labels_in_range(start, end, config.weekly_week_basis)
+
+    if not config.reviews_root.exists() or not config.reviews_root.is_dir():
+        warnings.append(f"Missing weekly reviews folder: {display_path(config.reviews_root, config.workspace_root)}")
+    else:
+        for label in labels:
+            week_files = sorted(path for path in config.reviews_root.glob(f"{label}*.md") if path.is_file())
+            request_name = f"{label}{config.generated_prefix}ai-weekly-request.md"
+            final_reviews = [path for path in week_files if path.name != request_name]
+            request_path = config.reviews_root / request_name
+            if final_reviews:
+                collected_paths.extend(final_reviews)
+            elif request_path.exists() and request_path.is_file():
+                collected_paths.append(request_path)
+                warnings.append(f"Missing final weekly review for {label}; using weekly request fallback.")
+            else:
+                warnings.append(f"Missing weekly review source for {label}.")
+
+    durable_paths = (
+        config.system_root / "decisions-active.md",
+        config.system_root / "workflow-rules.md",
+        config.system_root / "personal-operating-manual.md",
+    )
+    for path in durable_paths:
+        if path.exists() and path.is_file():
+            collected_paths.append(path)
+        else:
+            warnings.append(f"Missing monthly durable state: {display_path(path, config.workspace_root)}")
+
+    docs_root = config.workspace_root / "docs"
+    if docs_root.exists() and docs_root.is_dir():
+        collected_paths.extend(sorted(path for path in docs_root.rglob("*.md") if path.is_file()))
+
+    return collected_paths, warnings
+
+
+def build_monthly_request(
+    start: dt.date,
+    end: dt.date,
+    prompt: str,
+    collected_paths: list[Path],
+    warnings: list[str],
+    config: Config,
+) -> str:
+    rendered_prompt = render_template(
+        prompt,
+        {
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
+            "month_label": month_label(end),
+        },
+    )
+    warning_text = "未发现缺失文件。"
+    if warnings:
+        warning_text = "\n".join(f"- {warning}" for warning in warnings)
+    collected = join_blocks(collected_paths, config) if collected_paths else "未收集到任何 monthly source 文件。\n"
+
+    return f"""# AI Monthly Review Request - {start.isoformat()} to {end.isoformat()}
+
+## 使用说明
+
+复制本文件全部内容，粘贴给 AI。
+
+月复盘优先使用已经保存的 weekly review；如果某周还没有最终 review，只把 weekly request 作为低可信 fallback。月复盘不回读 raw，也不逐日复述 daily。
+
+## Warnings
+
+{warning_text}
+
+## Prompt
+
+{rendered_prompt.rstrip()}
+
+## Monthly Sources
+
+{collected.rstrip()}
+"""
+
+
+def command_monthly(args: argparse.Namespace, config: Config) -> int:
+    start = parse_date(args.start)
+    end = parse_date(args.end)
+    if end < start:
+        raise CyberlogError("--end must be the same as or later than --start.")
+
+    prompt = read_required_prompt(config.system_root / "monthly-review-prompt.md", config)
+    collected_paths, warnings = collect_monthly_sources(start, end, config)
+    output_path = monthly_reviews_root(config) / f"{month_label(end)}{config.generated_prefix}ai-monthly-request.md"
+    request = build_monthly_request(start, end, prompt, collected_paths, warnings, config)
+    write_text(output_path, request)
+
+    print(f"Wrote {display_path(output_path, config.workspace_root)}")
+    print(f"Collected {len(collected_paths)} monthly source file(s).")
+    if warnings:
+        print("Warnings:")
+        for warning in warnings:
+            print(f"- {warning}")
+    return 0
+
+
 def command_init(args: argparse.Namespace, config: Config) -> int:
     config.workspace_root.mkdir(parents=True, exist_ok=True)
     for path in (
@@ -2356,6 +2477,7 @@ def command_init(args: argparse.Namespace, config: Config) -> int:
         config.daily_compiled_root,
         config.daily_templates_root,
         config.reviews_root,
+        monthly_reviews_root(config),
         golden_days_root(config),
         config.system_root,
         config.workspace_root / "tools",
@@ -2372,6 +2494,7 @@ def command_init(args: argparse.Namespace, config: Config) -> int:
         config.system_root / "schemas.md": SCHEMAS_TEMPLATE,
         config.system_root / "error-taxonomy.md": ERROR_TAXONOMY_TEMPLATE,
         config.system_root / "weekly-review-prompt.md": WEEKLY_REVIEW_PROMPT,
+        config.system_root / "monthly-review-prompt.md": MONTHLY_REVIEW_PROMPT,
         config.system_root / "personal-operating-manual.md": PERSONAL_OPERATING_MANUAL,
         config.system_root / "workflow-rules.md": WORKFLOW_RULES,
         config.workspace_root / "README-cyberlog.md": README,

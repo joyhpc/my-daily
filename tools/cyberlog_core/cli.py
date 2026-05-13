@@ -13,6 +13,7 @@ from .app import (
     command_decisions,
     command_golden,
     command_init,
+    command_monthly,
     command_prune_raw,
     command_today,
     command_validate,
@@ -39,6 +40,11 @@ def build_parser() -> argparse.ArgumentParser:
     weekly.add_argument("--start", required=True, help="Start date in YYYY-MM-DD format.")
     weekly.add_argument("--end", required=True, help="End date in YYYY-MM-DD format.")
     weekly.set_defaults(func=command_weekly)
+
+    monthly = subparsers.add_parser("monthly", help="Build monthly AI workflow intelligence request.")
+    monthly.add_argument("--start", required=True, help="Start date in YYYY-MM-DD format.")
+    monthly.add_argument("--end", required=True, help="End date in YYYY-MM-DD format.")
+    monthly.set_defaults(func=command_monthly)
 
     init = subparsers.add_parser("init", help="Create directories and template files.")
     init.add_argument("--force", action="store_true", help="Overwrite existing templates.")

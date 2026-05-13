@@ -39,6 +39,10 @@ my-daily/
   Reviews/
     weekly/
       2026-W19_ai-weekly-request.md
+      2026-W19_weekly-review.md
+    monthly/
+      2026-05_ai-monthly-request.md
+      2026-05_monthly-review.md
     golden-days/
       2026-05-07.json
       _golden-report.md
@@ -49,6 +53,7 @@ my-daily/
     error-taxonomy.md
     decisions-active.md
     weekly-review-prompt.md
+    monthly-review-prompt.md
     personal-operating-manual.md
     workflow-rules.md
   tools/
@@ -76,7 +81,7 @@ my-daily/
 
 - `tools/cyberlog.py`：薄 CLI wrapper，只负责调用 runtime。
 - `tools/cyberlog_core/cli.py`：参数解析和命令分发。
-- `tools/cyberlog_core/app.py`：daily、validate、close-day、weekly、prune 等运行时命令实现。
+- `tools/cyberlog_core/app.py`：daily、validate、close-day、weekly、monthly、prune 等运行时命令实现。
 - `tools/cyberlog_core/templates.py`：`init` 会落盘的内置 prompt / README / schema 模板。
 - `tools/cyberlog_core/models.py`：共享 dataclass 模型。
 - `tools/cyberlog_core/constants.py`：小型运行常量和默认配置。
@@ -253,6 +258,34 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
 
 缺失的 `_cyberlog.md` 或 `_tomorrow-boot.md` 会作为 warning 写入 request，不会导致命令失败。
 
+把 AI 生成的周复盘保存为：
+
+```text
+Reviews/weekly/2026-W19_weekly-review.md
+```
+
+周复盘只负责战术层诊断：重复摩擦、思维偏差候选、文档候选、规则候选，以及下周唯一自我迭代实验。
+
+## 每月怎么用
+
+月复盘读取 weekly review / weekly request 和长期状态文件，不回读 raw，也不逐日总结 daily。它负责系统层改进：抽象思维方法、沉淀文档资产、修剪规则、识别可自动化动作。
+
+```bash
+python3 tools/cyberlog.py monthly --start 2026-05-01 --end 2026-05-31
+```
+
+它会生成类似：
+
+```text
+Reviews/monthly/2026-05_ai-monthly-request.md
+```
+
+如果某周没有保存 final weekly review，monthly 会使用对应 weekly request 作为低可信 fallback，并在 request 的 warning 中说明。把 AI 生成的月复盘保存为：
+
+```text
+Reviews/monthly/2026-05_monthly-review.md
+```
+
 ## 为什么 raw 可清理但不能覆盖
 
 raw 是真实工作轨迹的短期输入层。它保留当时的混乱、上下文、误判、阻塞和决策过程，方便当天整理和短期纠错。AI 输出是整理层，只能生成 `_` 开头的文件，不能覆盖 raw。daily 完整生成并人工审核后，raw 不再作为永久记录；7 天后可以清理，只保留 compiled 和 `_raw-discard-log.md`。
@@ -312,6 +345,7 @@ python3 tools/cyberlog.py golden check --strict
 python3 tools/cyberlog.py prune-raw --older-than 7
 python3 tools/cyberlog.py prune-raw --older-than 7 --apply
 python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
+python3 tools/cyberlog.py monthly --start 2026-05-01 --end 2026-05-31
 ```
 
 如果你不在 my-daily 根目录运行，可以指定 root：
@@ -336,6 +370,7 @@ python3 /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --dat
 12. 运行 `prune-raw --older-than 7`，确认默认只预览；再用临时目录测试 `--apply` 只会删除 `phase == closed` 的 raw 并写 `_raw-discard-log.md`。
 13. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
 14. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
+15. 准备一个 `Reviews/weekly/YYYY-WNN_weekly-review.md`，运行 `monthly`，确认会生成 `Reviews/monthly/YYYY-MM_ai-monthly-request.md`。
 
 也可以运行内置测试：
 

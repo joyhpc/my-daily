@@ -104,8 +104,16 @@ raw 默认自由写，不需要填表。只有当可信度会影响后续整理�
 
 1. 确保每天都有 `_cyberlog.md` 和 `_tomorrow-boot.md`，缺失可以接受但要知道缺口。
 2. 运行 `python3 tools/cyberlog.py weekly --start YYYY-MM-DD --end YYYY-MM-DD`。
-3. 把生成的 weekly request 投喂给 AI。
-4. 只提取能改变下周行为的结论，不保存流水账总结。
+3. 把生成的 weekly request 投喂给 AI，并把输出保存成 `Reviews/weekly/YYYY-WNN_weekly-review.md`。
+4. 只保留重复摩擦、思维偏差候选、文档候选、规则候选和下周唯一实验，不保存流水账总结。
+
+## 我如何做月复盘
+
+1. 确保本月关键 weekly review 已保存；缺失可以接受，但 monthly 会把 weekly request 作为低可信 fallback。
+2. 运行 `python3 tools/cyberlog.py monthly --start YYYY-MM-DD --end YYYY-MM-DD`。
+3. 把生成的 monthly request 投喂给 AI，并把输出保存成 `Reviews/monthly/YYYY-MM_monthly-review.md`。
+4. 月复盘只做系统层动作：识别长期工作流缺陷、思维方法问题、应沉淀的文档、应自动化的人工动作，以及应删除/合并/降级的规则。
+5. 每月最多选择 1-2 个系统实验，不把月复盘变成大计划。
 
 ## 我如何沉淀规则
 
@@ -128,7 +136,7 @@ raw 默认自由写，不需要填表。只有当可信度会影响后续整理�
 
 流程定义固定为：
 
-`daily -> AI output -> conflict-scan -> decisions rollup -> validate -> close-day -> prune/weekly`
+`daily -> AI output -> conflict-scan -> decisions rollup -> validate -> close-day -> weekly -> monthly -> prune`
 
 每一步的职责边界：
 - `_run-state.json`：由 `today`、`daily`、`validate --write`、`close-day` 维护，记录 phase、状态转换、输入 hash 和规则/provenance hash；`prune-raw` 只清理 `closed` 日期。
@@ -138,6 +146,7 @@ raw 默认自由写，不需要填表。只有当可信度会影响后续整理�
 - `decisions rollup`：生成 `System/decisions-active.md`，只展示未 frozen / superseded 的决策。
 - `validate`：只读校验 schema、AI output contract、conflict gate、decision integrity、comms aging；默认打印，不写文件。
 - `close-day`：串起 conflict scan、decision rollup 和 validation；只有无 blocking finding 才关闭当天。
-- `weekly`：只读取 compiled 输出和结构化状态，不回读 raw。
+- `weekly`：只读取 compiled 输出和结构化状态，不回读 raw；输出下周实验、文档候选和规则候选。
+- `monthly`：只读取 weekly review / request 和长期状态文件；负责抽象思维模式、沉淀文档资产、修剪规则和选择下月系统实验。
 
 如果 `validate --date YYYY-MM-DD` 出现 `blocking`，当天不能视作关闭；必须解决、显式接受，或把它记录为下一天的阻塞。

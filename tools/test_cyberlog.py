@@ -37,10 +37,13 @@ class CyberlogTests(unittest.TestCase):
             projects = root / "System" / "projects.yml"
             schemas = root / "System" / "schemas.md"
             taxonomy = root / "System" / "error-taxonomy.md"
+            monthly_prompt = root / "System" / "monthly-review-prompt.md"
             self.assertTrue(prompt.exists())
             self.assertTrue(projects.exists())
             self.assertTrue(schemas.exists())
             self.assertTrue(taxonomy.exists())
+            self.assertTrue(monthly_prompt.exists())
+            self.assertTrue((root / "Reviews" / "monthly").is_dir())
             prompt.write_text("KEEP ME\n", encoding="utf-8")
 
             self.assertEqual(self.run_cli(root, "init"), 0)
@@ -600,6 +603,30 @@ class CyberlogTests(unittest.TestCase):
             self.assertIn('<file path="Daily/compiled/2026-05-02/_cyberlog.md">', text)
             self.assertIn("Missing weekly source: Daily/compiled/2026-05-02/_tomorrow-boot.md", text)
             self.assertIn("Missing daily compiled folder: Daily/compiled/2026-05-03", text)
+
+    def test_monthly_collects_weekly_reviews_and_durable_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertEqual(self.run_cli(root, "init"), 0)
+
+            weekly = root / "Reviews" / "weekly"
+            weekly.mkdir(parents=True, exist_ok=True)
+            (weekly / "2026-W19_weekly-review.md").write_text("weekly diagnosis\n", encoding="utf-8")
+            (root / "System" / "decisions-active.md").write_text("active decisions\n", encoding="utf-8")
+
+            self.assertEqual(
+                self.run_cli(root, "monthly", "--start", "2026-05-04", "--end", "2026-05-10"),
+                0,
+            )
+
+            output = root / "Reviews" / "monthly" / "2026-05_ai-monthly-request.md"
+            self.assertTrue(output.exists())
+            text = output.read_text(encoding="utf-8")
+            self.assertIn("AI Monthly Review Request - 2026-05-04 to 2026-05-10", text)
+            self.assertIn("Monthly Workflow Intelligence", text)
+            self.assertIn('<file path="Reviews/weekly/2026-W19_weekly-review.md">', text)
+            self.assertIn('<file path="System/decisions-active.md">', text)
+            self.assertIn("weekly diagnosis", text)
 
 
 if __name__ == "__main__":

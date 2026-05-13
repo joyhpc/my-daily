@@ -211,79 +211,88 @@ WEEKLY_REVIEW_PROMPT = """# Weekly Workflow Review Prompt
 
 你是我的 weekly workflow review agent。
 
-下面是我这一周每天的 _cyberlog.md 和 _tomorrow-boot.md。
-如果输入中包含 `_decisions.yml`、`_comms.yml`、`_conflicts.md`，它们是结构化状态文件，应优先用于决策、沟通和冲突状态判断。
-请分析我的工作流，而不是总结流水账。
+下面是这一周已经审核过的 compiled 输出：每天的 `_cyberlog.md`、`_tomorrow-boot.md`，以及可能存在的 `_decisions.yml`、`_comms.yml`、`_conflicts.md`。
+
+你的任务不是写周报，而是做一页工作方式诊断。请找重复模式、下周实验和文档候选，不要按日期流水账复述。
 
 边界规则：
-- 周复盘只使用已经审核过的 compiled 输出，不回读 raw。
-- raw 是临时事实输入层，可能已经按保留期清理；不要把 raw 缺失当成记录不完整。
-- `_ai-feed.md` 和 `_ai-request.md` 是生成中间件，不是周复盘的长期事实来源。
-- 如果某天缺少 `_cyberlog.md` 或 `_tomorrow-boot.md`，把它作为记录缺口，不要自行从其他来源补事实。
-- `_comms.yml` 中状态卡在 `draft` 超过 3 天的沟通项必须列入追踪；`waiting_for_reply` 超过 `expected_reply_by` 的沟通项必须列入追踪；无 `expected_reply_by` 但影响 P0/P1 项目的等待项列为 warning。
-- `_conflicts.md` 中未关闭的 forbidden alias、LPDDR5/LPDDR5X、constraint conflict 必须进入下周风险或阻塞。
+- 只使用 compiled 输出，不回读 raw。
+- `_ai-feed.md` 和 `_ai-request.md` 是生成中间件，不是长期事实来源。
+- 某天缺 `_cyberlog.md` 或 `_tomorrow-boot.md` 时，只记录为输入缺口，不自行补事实。
+- `_decisions.yml` 优先用于跨日决策状态；`_comms.yml` 优先用于沟通状态；`_conflicts.md` 优先用于口径冲突。
+- draft 超过 3 天、waiting_for_reply 过期、P0/P1 waiting 缺 expected_reply_by，必须进入追踪。
+- 输出要短，只保留会改变下周行为或值得月度沉淀的内容。
 
 请输出：
 
-# Weekly Workflow Review — {{start_date}} to {{end_date}}
+# Weekly Workflow Diagnosis — {{start_date}} to {{end_date}}
 
 ## 1. 本周真正推进的主线
 
-不要按日期流水账总结，而是按项目和成果总结。
+按项目和成果总结，不按日期总结。最多 5 条。
 
-## 2. 本周主要产出
+## 2. 重复摩擦
 
-列出可复用产出，并说明它们的长期价值。
+只列重复出现或明显影响效率的摩擦。每条包含：
+- 摩擦：
+- 证据：
+- 影响：
+- 下周处理方式：
 
-## 3. 重复出现的阻塞
+## 3. 思维偏差候选
 
-找出重复出现的 blocker、friction、context switch、unclear goal、tool-chain issue。
+找本周可能出现的判断习惯问题，例如过早冻结、把表象当根因、先选实现再定义边界、追求格式完美但收益低。每条包含：
+- 偏差候选：
+- 证据：
+- 更好的判断顺序：
 
-## 4. 最大上下文切换来源
+## 4. 高价值任务 vs 低价值消耗
 
-分析哪些项目、任务、工具或外部事件造成切换成本。
+只分四类：
+- high leverage：
+- maintenance：
+- blocked：
+- low leverage / distraction：
 
-## 5. 高价值任务 vs 低价值消耗
+## 5. 适合交给 AI / agent 的任务
 
-把本周活动分成：
-- high leverage
-- maintenance
-- distraction
-- blocked
-- learning
-- reusable asset
+列 1-5 个任务类型，说明输入、完成标准和人工审核点。
 
-## 6. 适合交给 AI / agent 的任务
+## 6. 必须由我亲自判断的任务
 
-列出任务类型，并说明为什么适合。
+列 1-5 个任务类型，说明为什么不能直接交给 AI。
 
-## 7. 必须由我亲自判断的任务
+## 7. 沟通状态追踪
 
-列出任务类型，并说明原因。
+基于 `_comms.yml` 输出：
+- draft 超过 3 天：
+- waiting_for_reply 过期：
+- P0/P1 waiting 缺 expected_reply_by：
+- 下周最该发送或追问的 1-3 项：
 
-## 8. 工作流规则候选
+## 8. 文档候选
 
-输出应该写入 System/workflow-rules.md 的规则。
+最多 3 个。只有满足以下任一条件才列入：重复出现 2 次以上、影响 P0/P1 判断、下次复用可节省 30 分钟以上、可变成 checklist/template/agent prompt。
 
 格式：
+- 文档：
+- 类型：checklist / playbook / mental-model / project-note
+- 为什么值得沉淀：
+- 建议路径：
+- 是否本周就写：yes/no
+
+## 9. 工作流规则候选
+
+最多 3 条。格式：
 - 触发条件：
 - 规则：
 - 原因：
 - 本周证据：
-- 建议优先级：
+- 建议优先级：P0/P1/P2
 
-## 9. 沟通状态追踪
+## 10. 下周唯一自我迭代实验
 
-基于 `_comms.yml` 输出：
-- draft 超过 3 天的项
-- waiting_for_reply 超过 expected_reply_by 的项
-- 无 expected_reply_by 但影响 P0/P1 项目的 waiting 项
-- 本周最该发送或追问的 1-3 项
-
-## 10. 下周只做一个自我迭代实验
-
-必须是一个最小实验，而不是大计划。
-格式：
+必须是一个最小实验，不是大计划。
 - 实验：
 - 触发条件：
 - 执行动作：
@@ -291,9 +300,101 @@ WEEKLY_REVIEW_PROMPT = """# Weekly Workflow Review Prompt
 - 失败信号：
 - 复查时间：
 
-## 11. 下周默认工作画布
+## 11. 给月复盘的信号
 
-输出下周可以直接放进 Obsidian 的默认工作画布结构。
+只列值得月度层继续观察的模式：
+- 可能的长期工作流缺陷：
+- 可能的思维方法问题：
+- 可能值得写入 docs/ 的资产：
+"""
+
+MONTHLY_REVIEW_PROMPT = """# Monthly Workflow Intelligence Prompt
+
+你是我的 monthly workflow intelligence agent。
+
+下面是这个月的 weekly review / weekly request，以及长期状态文件，例如 `System/decisions-active.md`、`System/workflow-rules.md`、`System/personal-operating-manual.md` 和 `docs/` 下的文档。
+
+你的任务不是复述这个月做了什么，而是抽象工作流、思维方法和文档资产。月复盘负责系统层改进：保留、合并、删除、沉淀和自动化。
+
+边界规则：
+- 不回读 raw，不逐日总结 daily。
+- 优先使用 final weekly review；如果输入只有 weekly request，要标记为低可信来源。
+- 不把一次性事件升级成长期模式，除非它影响 P0/P1 或有明显复发风险。
+- 不追求规则越多越好；必须主动识别应删除、合并或降级的规则。
+- 文档沉淀要考虑维护成本。不能复用、不能减少人工、不能改善判断的内容不要沉淀。
+
+请输出：
+
+# Monthly Workflow Intelligence — {{month_label}}
+
+## 1. 本月最高杠杆工作
+
+列出真正改变项目状态、系统能力或未来效率的工作。最多 5 条。
+
+## 2. 重复工作流缺陷
+
+只列跨周重复、或单次影响很大的缺陷。每条包含：
+- 缺陷：
+- 跨周证据：
+- 造成的成本：
+- 系统性修正：
+
+## 3. 思维方法待改进
+
+关注判断顺序和问题定义方式。每条包含：
+- 模式：
+- 证据：
+- 风险：
+- 下月替代思考动作：
+
+## 4. 本月形成的工程原则
+
+只保留可迁移原则，不保留项目流水账。每条包含：
+- 原则：
+- 适用场景：
+- 反例/边界：
+
+## 5. 应沉淀的文档资产
+
+最多 5 个。每个给出：
+- 文档：
+- 类型：checklist / playbook / mental-model / project-note
+- 建议路径：
+- 为什么值得长期维护：
+- 第一版最小内容：
+
+## 6. 应自动化或脚本化的人工动作
+
+列出可以减少重复劳动的动作。每条包含：
+- 动作：
+- 当前人工成本：
+- 自动化方式：
+- 不做自动化的风险：
+
+## 7. 应删除、合并或降级的规则
+
+主动修剪系统复杂度。每条包含：
+- 规则/文档：
+- 操作：delete / merge / downgrade / keep
+- 原因：
+
+## 8. 下月 1-2 个系统实验
+
+每个实验必须小而可验证：
+- 实验：
+- 触发条件：
+- 执行动作：
+- 成功标准：
+- 失败信号：
+- 复查时间：
+
+## 9. 下月默认关注面
+
+列出下月一打开工作流就应该看到的：
+- 项目风险：
+- 沟通等待：
+- 决策 gate：
+- 可交给 AI / agent 的固定任务：
 """
 
 PERSONAL_OPERATING_MANUAL = """# Personal Operating Manual
@@ -393,8 +494,16 @@ raw 默认自由写，不需要填表。只有当可信度会影响后续整理�
 
 1. 确保每天都有 `_cyberlog.md` 和 `_tomorrow-boot.md`，缺失可以接受但要知道缺口。
 2. 运行 `python3 tools/cyberlog.py weekly --start YYYY-MM-DD --end YYYY-MM-DD`。
-3. 把生成的 weekly request 投喂给 AI。
-4. 只提取能改变下周行为的结论，不保存流水账总结。
+3. 把生成的 weekly request 投喂给 AI，并把输出保存成 `Reviews/weekly/YYYY-WNN_weekly-review.md`。
+4. 只保留重复摩擦、思维偏差候选、文档候选、规则候选和下周唯一实验，不保存流水账总结。
+
+## 我如何做月复盘
+
+1. 确保本月关键 weekly review 已保存；缺失可以接受，但 monthly 会把 weekly request 作为低可信 fallback。
+2. 运行 `python3 tools/cyberlog.py monthly --start YYYY-MM-DD --end YYYY-MM-DD`。
+3. 把生成的 monthly request 投喂给 AI，并把输出保存成 `Reviews/monthly/YYYY-MM_monthly-review.md`。
+4. 月复盘只做系统层动作：识别长期工作流缺陷、思维方法问题、应沉淀的文档、应自动化的人工动作，以及应删除/合并/降级的规则。
+5. 每月最多选择 1-2 个系统实验，不把月复盘变成大计划。
 
 ## 我如何沉淀规则
 
@@ -417,7 +526,7 @@ raw 默认自由写，不需要填表。只有当可信度会影响后续整理�
 
 流程定义固定为：
 
-`daily -> AI output -> conflict-scan -> decisions rollup -> validate -> close-day -> prune/weekly`
+`daily -> AI output -> conflict-scan -> decisions rollup -> validate -> close-day -> weekly -> monthly -> prune`
 
 每一步的职责边界：
 - `_run-state.json`：由 `today`、`daily`、`validate --write`、`close-day` 维护，记录 phase、状态转换、输入 hash 和规则/provenance hash；`prune-raw` 只清理 `closed` 日期。
@@ -427,7 +536,8 @@ raw 默认自由写，不需要填表。只有当可信度会影响后续整理�
 - `decisions rollup`：生成 `System/decisions-active.md`，只展示未 frozen / superseded 的决策。
 - `validate`：只读校验 schema、AI output contract、conflict gate、decision integrity、comms aging；默认打印，不写文件。
 - `close-day`：串起 conflict scan、decision rollup 和 validation；只有无 blocking finding 才关闭当天。
-- `weekly`：只读取 compiled 输出和结构化状态，不回读 raw。
+- `weekly`：只读取 compiled 输出和结构化状态，不回读 raw；输出下周实验、文档候选和规则候选。
+- `monthly`：只读取 weekly review / request 和长期状态文件；负责抽象思维模式、沉淀文档资产、修剪规则和选择下月系统实验。
 
 如果 `validate --date YYYY-MM-DD` 出现 `blocking`，当天不能视作关闭；必须解决、显式接受，或把它记录为下一天的阻塞。
 """
@@ -517,6 +627,10 @@ my-daily/
   Reviews/
     weekly/
       2026-W19_ai-weekly-request.md
+      2026-W19_weekly-review.md
+    monthly/
+      2026-05_ai-monthly-request.md
+      2026-05_monthly-review.md
     golden-days/
       2026-05-07.json
       _golden-report.md
@@ -527,6 +641,7 @@ my-daily/
     error-taxonomy.md
     decisions-active.md
     weekly-review-prompt.md
+    monthly-review-prompt.md
     personal-operating-manual.md
     workflow-rules.md
   tools/
@@ -554,7 +669,7 @@ my-daily/
 
 - `tools/cyberlog.py`：薄 CLI wrapper，只负责调用 runtime。
 - `tools/cyberlog_core/cli.py`：参数解析和命令分发。
-- `tools/cyberlog_core/app.py`：daily、validate、close-day、weekly、prune 等运行时命令实现。
+- `tools/cyberlog_core/app.py`：daily、validate、close-day、weekly、monthly、prune 等运行时命令实现。
 - `tools/cyberlog_core/templates.py`：`init` 会落盘的内置 prompt / README / schema 模板。
 - `tools/cyberlog_core/models.py`：共享 dataclass 模型。
 - `tools/cyberlog_core/constants.py`：小型运行常量和默认配置。
@@ -731,6 +846,34 @@ Reviews/weekly/2026-W19_ai-weekly-request.md
 
 缺失的 `_cyberlog.md` 或 `_tomorrow-boot.md` 会作为 warning 写入 request，不会导致命令失败。
 
+把 AI 生成的周复盘保存为：
+
+```text
+Reviews/weekly/2026-W19_weekly-review.md
+```
+
+周复盘只负责战术层诊断：重复摩擦、思维偏差候选、文档候选、规则候选，以及下周唯一自我迭代实验。
+
+## 每月怎么用
+
+月复盘读取 weekly review / weekly request 和长期状态文件，不回读 raw，也不逐日总结 daily。它负责系统层改进：抽象思维方法、沉淀文档资产、修剪规则、识别可自动化动作。
+
+```bash
+python3 tools/cyberlog.py monthly --start 2026-05-01 --end 2026-05-31
+```
+
+它会生成类似：
+
+```text
+Reviews/monthly/2026-05_ai-monthly-request.md
+```
+
+如果某周没有保存 final weekly review，monthly 会使用对应 weekly request 作为低可信 fallback，并在 request 的 warning 中说明。把 AI 生成的月复盘保存为：
+
+```text
+Reviews/monthly/2026-05_monthly-review.md
+```
+
 ## 为什么 raw 可清理但不能覆盖
 
 raw 是真实工作轨迹的短期输入层。它保留当时的混乱、上下文、误判、阻塞和决策过程，方便当天整理和短期纠错。AI 输出是整理层，只能生成 `_` 开头的文件，不能覆盖 raw。daily 完整生成并人工审核后，raw 不再作为永久记录；7 天后可以清理，只保留 compiled 和 `_raw-discard-log.md`。
@@ -790,6 +933,7 @@ python3 tools/cyberlog.py golden check --strict
 python3 tools/cyberlog.py prune-raw --older-than 7
 python3 tools/cyberlog.py prune-raw --older-than 7 --apply
 python3 tools/cyberlog.py weekly --start 2026-05-01 --end 2026-05-07
+python3 tools/cyberlog.py monthly --start 2026-05-01 --end 2026-05-31
 ```
 
 如果你不在 my-daily 根目录运行，可以指定 root：
@@ -814,6 +958,7 @@ python3 /path/to/my-daily/tools/cyberlog.py --root /path/to/my-daily daily --dat
 12. 运行 `prune-raw --older-than 7`，确认默认只预览；再用临时目录测试 `--apply` 只会删除 `phase == closed` 的 raw 并写 `_raw-discard-log.md`。
 13. 准备几天的 `_cyberlog.md` 和 `_tomorrow-boot.md`，运行 `weekly`，确认会收集存在的文件。
 14. 删除某天的 `_tomorrow-boot.md` 后再运行 `weekly`，确认输出 warning 而不是失败。
+15. 准备一个 `Reviews/weekly/YYYY-WNN_weekly-review.md`，运行 `monthly`，确认会生成 `Reviews/monthly/YYYY-MM_ai-monthly-request.md`。
 
 也可以运行内置测试：
 
