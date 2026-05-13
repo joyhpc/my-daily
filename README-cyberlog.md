@@ -2,10 +2,17 @@
 
 这个系统把 Obsidian Daily 文件夹里的原始 markdown 合并成 AI 投喂包，并生成固定 prompt。它的目标不是改变白天的记录习惯，而是在一天结束时把工作画布、事件流、决策、阻塞、任务和自我迭代信号整理成可复用资产。
 
+## Architecture
+
+![my-daily Cyberlog architecture](docs/images/cyberlog-architecture.png)
+
 ## 文件结构
 
 ```text
 my-daily/
+  docs/
+    images/
+      cyberlog-architecture.png
   Daily/
     raw/
       2026-05-07/

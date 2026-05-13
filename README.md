@@ -4,6 +4,10 @@ Personal daily cyberlog workspace.
 
 This repo is a reviewed daily work/life cyberlog, not a permanent evidence archive.
 
+## Architecture
+
+![my-daily Cyberlog architecture](docs/images/cyberlog-architecture.png)
+
 Current policy:
 
 - `Daily/raw/YYYY-MM-DD/` is a temporary fact input layer.
