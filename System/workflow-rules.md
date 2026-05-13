@@ -42,7 +42,13 @@
 规则：只清理已经完整生成并人工审核的日期目录；删除前默认 dry-run，实际删除必须写入 `Daily/compiled/YYYY-MM-DD/_raw-discard-log.md`，记录文件名、大小和 hash。
 原因：raw 不再永久保存，但清理行为本身要可解释，未来能知道当时丢弃了哪些输入。
 
-## Rule 8: 跨日决策只能通过 _decisions.yml 的 supersedes 链流转
+## Rule 8: 有价值生成物默认同步远端
+
+触发条件：AI/Codex 生成了有保留价值的 compiled 输出、规则、手册、审计、复盘、模板或其它可复用生成物。
+规则：完成本地验证后，默认把相关文件提交并推送到远端；不要等用户再次提醒。提交前先看 `git status`，只纳入本次任务相关文件，不夹带无关改动。
+原因：daily repo 的价值在于可恢复、可跨设备同步和可追溯。生成物只停留在本地会增加丢失和上下文断裂风险。
+
+## Rule 9: 跨日决策只能通过 _decisions.yml 的 supersedes 链流转
 
 触发条件：今天的结论与昨天或历史决策不一致。
 规则：必须在 `Daily/compiled/YYYY-MM-DD/_decisions.yml` 中显式写 `supersedes: [<旧决策id>]`，并把旧决策标记为 `superseded`，或确保 `decisions --rollup` 能通过 supersedes 链把旧决策排除出 active view。

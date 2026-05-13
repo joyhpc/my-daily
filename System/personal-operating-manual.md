@@ -30,7 +30,8 @@
 3. 默认让 Codex/agent 完整处理 `_ai-request.md`，并保存 `_cyberlog.md`、`_tomorrow-boot.md`、`_ai-output-audit.md`。
 4. 审核 `_ai-audit.md` 和 `_ai-output-audit.md`，确认没有混入被排除目录、没有把草稿或推断升级成事实。
 5. 把明确值得复用的规则候选手动写入 `System/workflow-rules.md`。
-6. raw 只作为临时事实输入层。daily 完整生成、审核并通过 `close-day` 标记为 `closed` 后，7 天后可以运行 `python3 tools/cyberlog.py prune-raw --older-than 7 --apply` 清理，只保留 compiled 和 `_raw-discard-log.md`。
+6. 如果生成了有价值的 compiled 输出、规则、手册、审计、复盘或模板，默认提交并推送到远端；提交前只纳入本次任务相关文件，不夹带无关变更。
+7. raw 只作为临时事实输入层。daily 完整生成、审核并通过 `close-day` 标记为 `closed` 后，7 天后可以运行 `python3 tools/cyberlog.py prune-raw --older-than 7 --apply` 清理，只保留 compiled 和 `_raw-discard-log.md`。
 
 `close-day` 运行前的核心输出 gate：
 - `_ai-audit.md`
