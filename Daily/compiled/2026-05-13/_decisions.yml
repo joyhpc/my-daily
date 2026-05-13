@@ -1,0 +1,41 @@
+# Decisions - 2026-05-13
+
+- id: A57-eDP/2026-05-13-001
+  project: A57-eDP
+  topic: AUX DPCD training debug priority
+  status: proposed
+  blockers: [AUX transaction traces not captured yet]
+  owner: HW / logic / test
+  next: Capture successful and failed AUX request/reply transactions and compare DPCD training status reads.
+  supersedes: []
+  evidence: [EDP 问题定位到AUX.md]
+
+- id: A57-eDP/2026-05-13-002
+  project: A57-eDP
+  topic: AUX Manchester decode basis
+  status: validated
+  blockers: []
+  owner: HW / test
+  next: Use SYNC, half-UI, polarity, and STOP checks before interpreting AUX bit fields.
+  supersedes: []
+  evidence: [eDP v1.4b 的常规 AUX 曼切斯特编码.md, UIMAN.md, aux周期 ±20%裕量允许.md]
+
+- id: A57-eDP/2026-05-13-003
+  project: A57-eDP
+  topic: DS90LV019 AUX implementation boundary
+  status: proposed
+  blockers: [common-mode margin not measured, turnaround guard time not measured, FPGA level translation not finalized]
+  owner: HW
+  next: Preserve AC coupling, bias, polarity, series, test point, DE default, and RE# control options in schematic review.
+  supersedes: []
+  evidence: [DS90LV019 eDP AUX应用特性.md, DS90LV019 EN turnaround.md]
+
+- id: A38-DF108-Agilex5/2026-05-13-001
+  project: A38-DF108-Agilex5
+  topic: External 1.2V 1.8V IO architecture
+  status: proposed
+  blockers: [168 IO direction speed realtime and registerability classification missing]
+  owner: HW / architecture
+  next: Classify the 168 external IOs before choosing fixed connector voltage, adapter board, IO bridge, or high-width translator.
+  supersedes: []
+  evidence: [A5E VDDIO范围.md, GPIO 1.2V 1.8V.md]

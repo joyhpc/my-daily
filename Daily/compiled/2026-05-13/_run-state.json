@@ -1,0 +1,70 @@
+{
+  "date": "2026-05-13",
+  "outputs": {
+    "Daily/compiled/2026-05-13/_ai-audit.md": true,
+    "Daily/compiled/2026-05-13/_ai-context.md": true,
+    "Daily/compiled/2026-05-13/_ai-feed.md": true,
+    "Daily/compiled/2026-05-13/_ai-output-audit.md": true,
+    "Daily/compiled/2026-05-13/_ai-request.md": true,
+    "Daily/compiled/2026-05-13/_conflicts.md": true,
+    "Daily/compiled/2026-05-13/_cyberlog.md": true,
+    "Daily/compiled/2026-05-13/_tomorrow-boot.md": true,
+    "Daily/compiled/2026-05-13/_validation.md": true,
+    "System/decisions-active.md": true
+  },
+  "phase": "closed",
+  "provenance": {
+    "System/ai-sync-prompt.md": "996808140f6d02bae55948e1dc82545e4977163e31de4b26c6159aaaaca92786",
+    "System/error-taxonomy.md": "bfb40e715a187ae09f664d3b5cf7a85e7297a01a6dd381669f9bde2fdc8f70e3",
+    "System/personal-operating-manual.md": "49b1501d73432c49b1d8c2153a1cb974e4df25d4d9c7e1cd22dbeb4c40708ecb",
+    "System/projects.yml": "6ab22aef64d26c9facb391d0330a97fdd56059630ce3186616b00816497d4733",
+    "System/schemas.md": "0930d383ccfa9db528dd4831c0a924d34e326f481449370bde8b72cb637006a5",
+    "System/workflow-rules.md": "a239af442c52e9871fc8628fd50e66fc488916007616032fad6ab601879053b2",
+    "cyberlog.config.json": "ea605c43bf055f00983189442800915e990921b1169d86cec8e74c6c8b0080ab"
+  },
+  "source_files_sha256": {
+    "Daily/raw/2026-05-13/5月13日_extracted/A5E VDDIO范围.md": "df5b8be784cb7635a55841d5c47f72358d1b568f2f08cd21ef6c193d582bbd2c",
+    "Daily/raw/2026-05-13/5月13日_extracted/DS90LV019 EN turnaround.md": "3c3511d53f43e24d25a90b64c712fd46750a3cdd0b70ccffef6bd7cf04c0b93c",
+    "Daily/raw/2026-05-13/5月13日_extracted/DS90LV019 eDP AUX应用特性.md": "46d301f08efd697890e9895296159afb8715550d532f0ad0c1f8ddf9cf5fdc3a",
+    "Daily/raw/2026-05-13/5月13日_extracted/EDP 问题定位到AUX.md": "d87bb5e703628476cd083a82e82f1d93b57564c55b898f7e7a2ffb28c4893fa0",
+    "Daily/raw/2026-05-13/5月13日_extracted/GPIO 1.2V 1.8V.md": "4aa848e4c8de0b0fda0cacbf48792a6d89d92471ff2c7d6000afd990769f1236",
+    "Daily/raw/2026-05-13/5月13日_extracted/UIMAN.md": "3daa0418d3ed9b8cb4446807ce0fff8e6db2e5c13524056fcfa4ac81b0a95eab",
+    "Daily/raw/2026-05-13/5月13日_extracted/aux周期 ±20%裕量允许.md": "56ff44e6d6071463b508810dd5d5adca83c915aa72b96e262fd7e60edce965da",
+    "Daily/raw/2026-05-13/5月13日_extracted/eDP v1.4b 的常规 AUX 曼切斯特编码.md": "79c3a3ca4eb6fb05fc3812c9be35c16870209cf780e2cf48fff65845bc36bcb9"
+  },
+  "transitions": [
+    {
+      "at": "2026-05-13T20:47:12+08:00",
+      "by": "daily",
+      "excluded_files": 0,
+      "historical_context_files": 3,
+      "missing_historical_context_files": 1,
+      "phase": "packaged",
+      "source_files": 8
+    },
+    {
+      "at": "2026-05-13T20:52:10+08:00",
+      "by": "validate",
+      "phase": "validated"
+    },
+    {
+      "at": "2026-05-13T20:52:21+08:00",
+      "by": "validate",
+      "phase": "validated"
+    },
+    {
+      "at": "2026-05-13T20:52:21+08:00",
+      "by": "close-day",
+      "phase": "closed",
+      "validation_gate": "PASS"
+    }
+  ],
+  "updated_at": "2026-05-13T20:52:21+08:00",
+  "validation": {
+    "blocking": 0,
+    "gate_result": "PASS",
+    "info": 5,
+    "report": "Daily/compiled/2026-05-13/_validation.md",
+    "warning": 0
+  }
+}
